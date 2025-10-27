@@ -1,0 +1,375 @@
+notation chen
+// title
+title Fullstack Novel Information System Data Model
+
+// Core
+user [icon: user, color: yellow]{
+  id string pk
+  username string nullable
+  email string
+  password string nullable
+  avatar_url string
+  bio string
+  created_at timestamp
+  updated_at timestamp
+  status string
+}
+
+novel [icon: book-open, color: blue]{
+  id string pk
+  created_by string fk
+  original_language string
+  original_author string nullable
+  created_at timestamp
+  updated_at timestamp
+  source string nullable
+  status string   nullable
+  word_count int  nullable
+  cover_media_id string fk nullable
+}
+
+novel_translation [icon: globe, color: lightblue]{
+  id string pk
+  novel_id string fk
+  lang string
+  title string
+  description string
+  summary string
+  translator_id string fk
+  created_at timestamp
+  updated_at timestamp
+}
+
+chapter [icon: file-text, color: blue]{
+  id string pk
+  novel_id string fk
+  number int
+  created_at timestamp
+  updated_at timestamp
+  word_count int
+}
+
+chapter_translation [icon: globe, color: lightblue]{
+  id string pk
+  chapter_id string fk
+  lang string
+  title string
+  content text
+  translator_id string fk
+  created_at timestamp
+  updated_at timestamp
+}
+
+// Categorization
+genre [icon: tag, color: green]{
+  id string pk
+  name string unique
+  description string nullable
+  slug string unique
+}
+
+novel_genre [icon: layers, color: green]{
+  id string pk
+  novel_id string fk
+  genre_id string fk
+}
+
+tag [icon: hash, color: green]{
+  id string pk
+  name string unique
+  description string nullable
+  slug string unique
+}
+
+novel_tag [icon: layers, color: green]{
+  id string pk
+  novel_id string fk
+  tag_id string fk
+}
+
+// User Interaction
+comment [icon: message-square, color: orange]{
+  id string pk
+  user_id string fk
+  novel_id string fk
+  chapter_id string fk
+  content text
+  created_at timestamp
+  updated_at timestamp
+  parent_comment_id string fk
+}
+
+rating [icon: star, color: orange]{
+  id string pk
+  user_id string fk
+  novel_id string fk
+  score int
+  review text
+  created_at timestamp
+  updated_at timestamp
+}
+
+bookmark [icon: bookmark, color: orange]{
+  id string pk
+  user_id string fk
+  novel_id string fk
+  chapter_id string fk
+  created_at timestamp
+}
+
+reading_history [icon: book, color: orange]{
+  id string pk
+  user_id string fk
+  novel_id string fk
+  chapter_id string fk
+  last_read_at timestamp
+  progress_percent float
+}
+
+like [icon: heart, color: orange]{
+  id string pk
+  user_id string fk
+  novel_id string fk
+  chapter_id string fk
+  comment_id string fk
+  created_at timestamp
+}
+
+// Authentication & Roles
+role [icon: shield, color: purple]{
+  id string pk
+  name string
+  description string
+}
+
+user_role [icon: users, color: purple]{
+  id string pk
+  user_id string fk
+  role_id string fk
+}
+
+session [icon: log-in, color: purple]{
+  id string pk
+  user_id string fk
+  token string
+  created_at timestamp
+  expires_at timestamp
+  ip_address string
+  user_agent string
+}
+
+// Analytics & System
+view_log [icon: eye, color: gray]{
+  id string pk
+  user_id string fk
+  novel_id string fk
+  chapter_id string fk
+  viewed_at timestamp
+  ip_address string
+}
+
+search_log [icon: search, color: gray]{
+  id string pk
+  user_id string fk
+  query string
+  searched_at timestamp
+  result_count int
+}
+
+report [icon: alert-triangle, color: red]{
+  id string pk
+  reporter_id string fk
+  target_type string
+  target_id string
+  reason string
+  status string
+  created_at timestamp
+  resolved_at timestamp
+}
+
+notification [icon: bell, color: gray]{
+  id string pk
+  user_id string fk
+  type string
+  content string
+  is_read boolean
+  created_at timestamp
+}
+
+activity_log [icon: activity, color: gray]{
+  id string pk
+  user_id string fk
+  action string
+  target_type string
+  target_id string
+  created_at timestamp
+  metadata json
+}
+
+// Media & Assets
+media [icon: image, color: pink]{
+  id string pk
+  url string
+  type string
+  uploaded_by string fk
+  uploaded_at timestamp
+  description string nullable
+  file_size int nullable
+  mime_type string nullable
+}
+
+novel_media [icon: image, color: pink]{
+  id string pk
+  novel_id string fk
+  media_id string fk
+  usage_type string
+}
+
+chapter_media [icon: image, color: pink]{
+  id string pk
+  chapter_id string fk
+  media_id string fk
+  usage_type string
+}
+
+// Social Features
+forum_post [icon: message-circle, color: teal]{
+  id string pk
+  user_id string fk
+  title string
+  content text
+  created_at timestamp
+  updated_at timestamp
+}
+
+forum_comment [icon: message-square, color: teal]{
+  id string pk
+  post_id string fk
+  user_id string fk
+  content text
+  created_at timestamp
+  parent_comment_id string fk
+}
+
+message [icon: mail, color: teal]{
+  id string pk
+  sender_id string fk
+  receiver_id string fk
+  content text
+  sent_at timestamp
+  is_read boolean
+}
+
+friend [icon: user-plus, color: teal]{
+  id string pk
+  user_id string fk
+  friend_user_id string fk
+  status string
+  created_at timestamp
+}
+
+// Advanced Features
+recommendation [icon: thumbs-up, color: brown]{
+  id string pk
+  user_id string fk
+  novel_id string fk
+  score float
+  reason string
+  created_at timestamp
+}
+
+
+translation_request [icon: edit-3, color: brown]{
+  id string pk
+  requester_id string fk
+  novel_id string fk
+  chapter_id string fk
+  lang string
+  status string
+  created_at timestamp
+  fulfilled_at timestamp
+}
+
+vote [icon: thumbs-up, color: brown]{
+  id string pk
+  user_id string fk
+  target_type string
+  target_id string
+  value int
+  created_at timestamp
+}
+
+// Relationships
+
+// Core
+novel.created_by > user.id
+novel.cover_media_id > media.id
+novel_translation.novel_id > novel.id
+novel_translation.translator_id > user.id
+chapter.novel_id > novel.id
+chapter_translation.chapter_id > chapter.id
+chapter_translation.translator_id > user.id
+
+// Categorization
+novel_genre.novel_id > novel.id
+novel_genre.genre_id > genre.id
+novel_tag.novel_id > novel.id
+novel_tag.tag_id > tag.id
+
+// User Interaction
+comment.user_id > user.id
+comment.novel_id > novel.id
+comment.chapter_id > chapter.id
+comment.parent_comment_id > comment.id
+rating.user_id > user.id
+rating.novel_id > novel.id
+bookmark.user_id > user.id
+bookmark.novel_id > novel.id
+bookmark.chapter_id > chapter.id
+reading_history.user_id > user.id
+reading_history.novel_id > novel.id
+reading_history.chapter_id > chapter.id
+like.user_id > user.id
+like.novel_id > novel.id
+like.chapter_id > chapter.id
+like.comment_id > comment.id
+
+// Authentication & Roles
+user_role.user_id > user.id
+user_role.role_id > role.id
+session.user_id > user.id
+
+// Analytics & System
+view_log.user_id > user.id
+view_log.novel_id > novel.id
+view_log.chapter_id > chapter.id
+search_log.user_id > user.id
+report.reporter_id > user.id
+notification.user_id > user.id
+activity_log.user_id > user.id
+
+// Media & Assets
+media.uploaded_by > user.id
+novel_media.novel_id > novel.id
+novel_media.media_id > media.id
+chapter_media.chapter_id > chapter.id
+chapter_media.media_id > media.id
+
+// Social Features
+forum_post.user_id > user.id
+forum_comment.post_id > forum_post.id
+forum_comment.user_id > user.id
+forum_comment.parent_comment_id > forum_comment.id
+message.sender_id > user.id
+message.receiver_id > user.id
+friend.user_id > user.id
+friend.friend_user_id > user.id
+
+// Advanced Features
+recommendation.user_id > user.id
+recommendation.novel_id > novel.id
+translation_request.requester_id > user.id
+translation_request.novel_id > novel.id
+translation_request.chapter_id > chapter.id
+vote.user_id > user.id
+

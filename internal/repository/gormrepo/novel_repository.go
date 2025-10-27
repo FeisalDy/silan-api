@@ -23,16 +23,51 @@ func (r *novelRepository) Create(ctx context.Context, n *novel.Novel) error {
 
 func (r *novelRepository) GetByID(ctx context.Context, id string) (*novel.Novel, error) {
 	var n novel.Novel
-	err := r.db.WithContext(ctx).Where("id = ?", id).First(&n).Error
+
+	err := r.db.WithContext(ctx).
+		Where("id = ?", id).
+		First(&n).Error
+
 	if err != nil {
 		return nil, err
 	}
+
+	return &n, nil
+}
+func (r *novelRepository) GetByIDWithTranslations(ctx context.Context, id, lang string) (*novel.Novel, error) {
+	var n novel.Novel
+
+	err := r.db.WithContext(ctx).
+		Where("id = ?", id).
+		Preload("Translations", func(db *gorm.DB) *gorm.DB {
+			if lang != "" {
+				db = db.Where("lang = ?", lang)
+			}
+			return db
+		}).
+		First(&n).Error
+
+	if err != nil {
+		return nil, err
+	}
+
 	return &n, nil
 }
 
-func (r *novelRepository) GetByCreator(ctx context.Context, creatorID string, limit, offset int) ([]novel.Novel, error) {
+func (r *novelRepository) GetAll(ctx context.Context, limit, offset int, title, lang string) ([]novel.Novel, error) {
 	var novels []novel.Novel
-	query := r.db.WithContext(ctx).Where("created_by = ?", creatorID).Order("created_at DESC")
+
+	query := r.db.WithContext(ctx).Model(&novel.Novel{}).Order("novels.updated_at DESC")
+
+	if title != "" || lang != "" {
+		query = query.Joins("JOIN novel_translations t ON t.novel_id = novels.id")
+		if lang != "" {
+			query = query.Where("t.lang = ?", lang)
+		}
+		if title != "" {
+			query = query.Where("t.title ILIKE ?", "%"+title+"%")
+		}
+	}
 
 	if limit > 0 {
 		query = query.Limit(limit)
@@ -41,34 +76,18 @@ func (r *novelRepository) GetByCreator(ctx context.Context, creatorID string, li
 		query = query.Offset(offset)
 	}
 
-	err := query.Find(&novels).Error
-	return novels, err
-}
-
-func (r *novelRepository) GetAll(ctx context.Context, limit, offset int) ([]novel.Novel, error) {
-	var novels []novel.Novel
-	query := r.db.WithContext(ctx).Order("created_at DESC")
-
-	if limit > 0 {
-		query = query.Limit(limit)
-	}
-	if offset > 0 {
-		query = query.Offset(offset)
-	}
+	query = query.Preload("Translations", func(db *gorm.DB) *gorm.DB {
+		if lang != "" {
+			db = db.Where("lang = ?", lang)
+		}
+		if title != "" {
+			db = db.Where("title ILIKE ?", "%"+title+"%")
+		}
+		return db
+	})
 
 	err := query.Find(&novels).Error
 	return novels, err
-}
-
-func (r *novelRepository) Update(ctx context.Context, n *novel.Novel) error {
-	result := r.db.WithContext(ctx).Model(n).Where("id = ?", n.ID).Updates(n)
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return fmt.Errorf("novel not found")
-	}
-	return nil
 }
 
 func (r *novelRepository) Delete(ctx context.Context, id string) error {
@@ -88,7 +107,6 @@ func (r *novelRepository) Count(ctx context.Context) (int64, error) {
 	return count, err
 }
 
-// Translation operations
 func (r *novelRepository) CreateTranslation(ctx context.Context, nt *novel.NovelTranslation) error {
 	return r.db.WithContext(ctx).Create(nt).Error
 }

@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 	"simple-go/internal/domain/user"
 	"simple-go/internal/repository"
+	"simple-go/pkg/logger"
 
 	"gorm.io/gorm"
 )
@@ -23,14 +23,14 @@ func NewUserService(userRepo repository.UserRepository, roleRepo repository.Role
 	}
 }
 
-// GetByID retrieves a user by ID
 func (s *UserService) GetByID(ctx context.Context, id string) (*user.UserResponse, error) {
 	u, err := s.userRepo.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("user not found")
 		}
-		return nil, fmt.Errorf("failed to get user: %w", err)
+		logger.Error(err, "failed to get user by ID")
+		return nil, errors.New("unable to retrieve user")
 	}
 	return u.ToResponse(), nil
 }
@@ -39,12 +39,14 @@ func (s *UserService) GetByID(ctx context.Context, id string) (*user.UserRespons
 func (s *UserService) GetAll(ctx context.Context, limit, offset int) ([]user.UserResponse, int64, error) {
 	users, err := s.userRepo.GetAll(ctx, limit, offset)
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to get users: %w", err)
+		logger.Error(err, "failed to get all users")
+		return nil, 0, errors.New("unable to retrieve users")
 	}
 
 	count, err := s.userRepo.Count(ctx)
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to count users: %w", err)
+		logger.Error(err, "failed to count users")
+		return nil, 0, errors.New("unable to retrieve users")
 	}
 
 	responses := make([]user.UserResponse, len(users))
@@ -63,7 +65,8 @@ func (s *UserService) Update(ctx context.Context, id string, dto user.UpdateUser
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("user not found")
 		}
-		return nil, fmt.Errorf("failed to get user: %w", err)
+		logger.Error(err, "failed to get user for update")
+		return nil, errors.New("unable to update user")
 	}
 
 	// Update fields
@@ -82,7 +85,8 @@ func (s *UserService) Update(ctx context.Context, id string, dto user.UpdateUser
 
 	// Save changes
 	if err := s.userRepo.Update(ctx, u); err != nil {
-		return nil, fmt.Errorf("failed to update user: %w", err)
+		logger.Error(err, "failed to save user updates")
+		return nil, errors.New("unable to update user")
 	}
 
 	return u.ToResponse(), nil
@@ -94,7 +98,8 @@ func (s *UserService) Delete(ctx context.Context, id string) error {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return errors.New("user not found")
 		}
-		return fmt.Errorf("failed to delete user: %w", err)
+		logger.Error(err, "failed to delete user")
+		return errors.New("unable to delete user")
 	}
 	return nil
 }
@@ -103,7 +108,8 @@ func (s *UserService) Delete(ctx context.Context, id string) error {
 func (s *UserService) GetUserRoles(ctx context.Context, userID string) ([]string, error) {
 	roles, err := s.roleRepo.GetUserRoles(ctx, userID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get user roles: %w", err)
+		logger.Error(err, "failed to get user roles")
+		return nil, errors.New("unable to retrieve user roles")
 	}
 
 	roleNames := make([]string, len(roles))

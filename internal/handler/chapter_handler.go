@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"simple-go/internal/domain/chapter"
 	"simple-go/internal/middleware"
@@ -26,7 +27,7 @@ func NewChapterHandler(chapterService *service.ChapterService) *ChapterHandler {
 func (h *ChapterHandler) Create(c *gin.Context) {
 	userID, exists := middleware.GetUserID(c)
 	if !exists {
-		response.Error(c, http.StatusUnauthorized, "Unauthorized", nil)
+		response.Error(c, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
@@ -36,7 +37,7 @@ func (h *ChapterHandler) Create(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request body", err)
+		response.Error(c, http.StatusBadRequest, fmt.Sprintf("Invalid request body: %v", err))
 		return
 	}
 
@@ -47,7 +48,7 @@ func (h *ChapterHandler) Create(c *gin.Context) {
 		req.Translation,
 	)
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Failed to create chapter", err)
+		response.Error(c, http.StatusBadRequest, fmt.Sprintf("Failed to create chapter: %v", err))
 		return
 	}
 
@@ -65,7 +66,7 @@ func (h *ChapterHandler) GetByID(c *gin.Context) {
 
 	result, err := h.chapterService.GetByIDWithTranslations(c.Request.Context(), id)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "Chapter not found", err)
+		response.Error(c, http.StatusNotFound, fmt.Sprintf("Chapter not found: %v", err))
 		return
 	}
 
@@ -76,7 +77,7 @@ func (h *ChapterHandler) GetByID(c *gin.Context) {
 func (h *ChapterHandler) GetByNovel(c *gin.Context) {
 	novelID := c.Query("novel_id")
 	if novelID == "" {
-		response.Error(c, http.StatusBadRequest, "novel_id query parameter is required", nil)
+		response.Error(c, http.StatusBadRequest, "novel_id query parameter is required")
 		return
 	}
 
@@ -94,7 +95,7 @@ func (h *ChapterHandler) GetByNovel(c *gin.Context) {
 
 	chapters, total, err := h.chapterService.GetByNovel(c.Request.Context(), novelID, limit, offset)
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Failed to retrieve chapters", err)
+		response.Error(c, http.StatusBadRequest, fmt.Sprintf("Failed to retrieve chapters: %v", err))
 		return
 	}
 
@@ -119,19 +120,19 @@ func (h *ChapterHandler) GetByNovelAndNumber(c *gin.Context) {
 	numberStr := c.Query("number")
 
 	if novelID == "" || numberStr == "" {
-		response.Error(c, http.StatusBadRequest, "novel_id and number query parameters are required", nil)
+		response.Error(c, http.StatusBadRequest, "novel_id and number query parameters are required")
 		return
 	}
 
 	number, err := strconv.Atoi(numberStr)
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid number format", err)
+		response.Error(c, http.StatusBadRequest, fmt.Sprintf("Invalid number format: %v", err))
 		return
 	}
 
 	result, err := h.chapterService.GetByNovelAndNumber(c.Request.Context(), novelID, number)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "Chapter not found", err)
+		response.Error(c, http.StatusNotFound, fmt.Sprintf("Chapter not found: %v", err))
 		return
 	}
 
@@ -144,13 +145,13 @@ func (h *ChapterHandler) Update(c *gin.Context) {
 
 	var dto chapter.UpdateChapterDTO
 	if err := c.ShouldBindJSON(&dto); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request body", err)
+		response.Error(c, http.StatusBadRequest, fmt.Sprintf("Invalid request body: %v", err))
 		return
 	}
 
 	result, err := h.chapterService.Update(c.Request.Context(), id, dto)
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Failed to update chapter", err)
+		response.Error(c, http.StatusBadRequest, fmt.Sprintf("Failed to update chapter: %v", err))
 		return
 	}
 
@@ -163,7 +164,7 @@ func (h *ChapterHandler) Delete(c *gin.Context) {
 
 	err := h.chapterService.Delete(c.Request.Context(), id)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "Failed to delete chapter", err)
+		response.Error(c, http.StatusNotFound, fmt.Sprintf("Failed to delete chapter: %v", err))
 		return
 	}
 
@@ -174,19 +175,19 @@ func (h *ChapterHandler) Delete(c *gin.Context) {
 func (h *ChapterHandler) CreateTranslation(c *gin.Context) {
 	userID, exists := middleware.GetUserID(c)
 	if !exists {
-		response.Error(c, http.StatusUnauthorized, "Unauthorized", nil)
+		response.Error(c, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
 	var dto chapter.CreateChapterTranslationDTO
 	if err := c.ShouldBindJSON(&dto); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request body", err)
+		response.Error(c, http.StatusBadRequest, fmt.Sprintf("Invalid request body: %v", err))
 		return
 	}
 
 	result, err := h.chapterService.CreateTranslation(c.Request.Context(), userID, dto)
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Failed to create translation", err)
+		response.Error(c, http.StatusBadRequest, fmt.Sprintf("Failed to create translation: %v", err))
 		return
 	}
 
@@ -200,7 +201,7 @@ func (h *ChapterHandler) GetTranslation(c *gin.Context) {
 
 	result, err := h.chapterService.GetTranslation(c.Request.Context(), chapterID, lang)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "Translation not found", err)
+		response.Error(c, http.StatusNotFound, fmt.Sprintf("Translation not found: %v", err))
 		return
 	}
 
@@ -213,13 +214,13 @@ func (h *ChapterHandler) UpdateTranslation(c *gin.Context) {
 
 	var dto chapter.UpdateChapterTranslationDTO
 	if err := c.ShouldBindJSON(&dto); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request body", err)
+		response.Error(c, http.StatusBadRequest, fmt.Sprintf("Invalid request body: %v", err))
 		return
 	}
 
 	result, err := h.chapterService.UpdateTranslation(c.Request.Context(), translationID, dto)
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Failed to update translation", err)
+		response.Error(c, http.StatusBadRequest, fmt.Sprintf("Failed to update translation: %v", err))
 		return
 	}
 
@@ -232,7 +233,7 @@ func (h *ChapterHandler) DeleteTranslation(c *gin.Context) {
 
 	err := h.chapterService.DeleteTranslation(c.Request.Context(), translationID)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "Failed to delete translation", err)
+		response.Error(c, http.StatusNotFound, fmt.Sprintf("Failed to delete translation: %v", err))
 		return
 	}
 

@@ -2,44 +2,79 @@ package middleware
 
 import (
 	"net/http"
-	"strings"
 
+	"simple-go/pkg/logger"
 	"simple-go/pkg/response"
 
 	"github.com/casbin/casbin/v2"
 	"github.com/gin-gonic/gin"
 )
 
-// CasbinAuthorizer is a middleware that enforces Casbin policies
+// Context keys for resource and action
+const (
+	ResourceKey = "casbin_resource"
+	ActionKey   = "casbin_action"
+)
+
+// SetResourceAction sets the resource and action in the context for Casbin authorization
+// This should be called in handlers before the Casbin middleware runs
+func SetResourceAction(c *gin.Context, resource, action string) {
+	c.Set(ResourceKey, resource)
+	c.Set(ActionKey, action)
+}
+
+// GetResourceAction retrieves the resource and action from the context
+func GetResourceAction(c *gin.Context) (resource, action string, exists bool) {
+	resourceVal, resourceExists := c.Get(ResourceKey)
+	actionVal, actionExists := c.Get(ActionKey)
+
+	if !resourceExists || !actionExists {
+		return "", "", false
+	}
+
+	resource, ok1 := resourceVal.(string)
+	action, ok2 := actionVal.(string)
+
+	if !ok1 || !ok2 {
+		return "", "", false
+	}
+
+	return resource, action, true
+}
+
+// CasbinAuthorizer creates a middleware that checks permissions using resource-action approach
 func CasbinAuthorizer(enforcer *casbin.Enforcer, roleGetter func(*gin.Context) ([]string, error)) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Get user roles
 		roles, err := roleGetter(c)
 		if err != nil {
-			response.Error(c, http.StatusInternalServerError, "Failed to get user roles", err)
+			logger.Error(err, "failed to get user roles")
+			response.Error(c, http.StatusInternalServerError, "Failed to get user roles")
 			c.Abort()
 			return
 		}
 
 		if len(roles) == 0 {
-			response.Error(c, http.StatusForbidden, "User has no roles assigned", nil)
+			response.Error(c, http.StatusForbidden, "User has no roles assigned")
 			c.Abort()
 			return
 		}
 
-		// Get request path and method
-		path := c.Request.URL.Path
-		method := c.Request.Method
-
-		// Normalize path to match Casbin policy pattern (replace dynamic segments)
-		normalizedPath := normalizePath(path)
+		// Get resource and action from context
+		resource, action, exists := GetResourceAction(c)
+		if !exists {
+			logger.Error(nil, "resource and action not set in context")
+			response.Error(c, http.StatusInternalServerError, "Authorization configuration error")
+			c.Abort()
+			return
+		}
 
 		// Check if any of the user's roles have permission
 		allowed := false
 		for _, role := range roles {
-			ok, err := enforcer.Enforce(role, normalizedPath, method)
+			ok, err := enforcer.Enforce(role, resource, action)
 			if err != nil {
-				response.Error(c, http.StatusInternalServerError, "Authorization check failed", err)
+				logger.Error(err, "authorization check failed")
+				response.Error(c, http.StatusInternalServerError, "Authorization check failed")
 				c.Abort()
 				return
 			}
@@ -50,7 +85,7 @@ func CasbinAuthorizer(enforcer *casbin.Enforcer, roleGetter func(*gin.Context) (
 		}
 
 		if !allowed {
-			response.Error(c, http.StatusForbidden, "Access denied", nil)
+			response.Error(c, http.StatusForbidden, "Access denied")
 			c.Abort()
 			return
 		}
@@ -59,20 +94,10 @@ func CasbinAuthorizer(enforcer *casbin.Enforcer, roleGetter func(*gin.Context) (
 	}
 }
 
-// normalizePath converts actual paths to policy patterns
-// E.g., /api/v1/users/123 -> /api/v1/users/:id
-func normalizePath(path string) string {
-	parts := strings.Split(path, "/")
-
-	// Handle /api/v1/users/:id pattern
-	if len(parts) >= 4 && parts[1] == "api" && parts[2] == "v1" {
-		resource := parts[3]
-
-		// If there's a 4th segment, it's likely an ID
-		if len(parts) >= 5 && parts[4] != "" {
-			return "/api/v1/" + resource + "/:id"
-		}
+// RequirePermission is a convenience middleware that sets the resource and action, then checks authorization
+func RequirePermission(resource, action string, enforcer *casbin.Enforcer, roleGetter func(*gin.Context) ([]string, error)) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		SetResourceAction(c, resource, action)
+		CasbinAuthorizer(enforcer, roleGetter)(c)
 	}
-
-	return path
 }

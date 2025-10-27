@@ -7,18 +7,19 @@ import (
 	"gorm.io/gorm"
 )
 
-// Novel represents a novel in the system
 type Novel struct {
-	ID               string    `gorm:"type:uuid;primaryKey" json:"id"`
-	CreatedBy        string    `gorm:"type:uuid;not null;index" json:"created_by"`
-	OriginalLanguage string    `gorm:"type:varchar(10);not null" json:"original_language"`
-	OriginalAuthor   *string   `gorm:"type:varchar(255)" json:"original_author"`
-	Source           *string   `gorm:"type:varchar(500)" json:"source"`
-	Status           *string   `gorm:"type:varchar(50)" json:"status"`
-	WordCount        *int      `gorm:"type:int" json:"word_count"`
-	CoverMediaID     *string   `gorm:"type:uuid;index" json:"cover_media_id"`
-	CreatedAt        time.Time `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt        time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+	ID               string    `gorm:"type:uuid;primaryKey"`
+	CreatedBy        string    `gorm:"type:uuid;not null;index"`
+	OriginalLanguage string    `gorm:"type:varchar(10);not null"`
+	OriginalAuthor   *string   `gorm:"type:varchar(255)"`
+	Source           *string   `gorm:"type:varchar(500)"`
+	Status           *string   `gorm:"type:varchar(50)"`
+	WordCount        *int      `gorm:"type:int"`
+	CoverMediaID     *string   `gorm:"type:uuid;index"`
+	CreatedAt        time.Time `gorm:"autoCreateTime"`
+	UpdatedAt        time.Time `gorm:"autoUpdateTime"`
+
+	Translations []NovelTranslation `gorm:"foreignKey:NovelID;constraint:OnDelete:CASCADE;"`
 }
 
 // BeforeCreate will set a UUID
@@ -36,15 +37,15 @@ func (Novel) TableName() string {
 
 // NovelTranslation represents a translation of a novel
 type NovelTranslation struct {
-	ID           string    `gorm:"type:uuid;primaryKey" json:"id"`
-	NovelID      string    `gorm:"type:uuid;not null;index" json:"novel_id"`
-	Lang         string    `gorm:"type:varchar(10);not null;index" json:"lang"`
-	Title        string    `gorm:"type:varchar(500);not null" json:"title"`
-	Description  *string   `gorm:"type:text" json:"description"`
-	Summary      *string   `gorm:"type:text" json:"summary"`
-	TranslatorID string    `gorm:"type:uuid;not null;index" json:"translator_id"`
-	CreatedAt    time.Time `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt    time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+	ID           string    `gorm:"type:uuid;primaryKey"`
+	NovelID      string    `gorm:"type:uuid;not null;index:idx_novel_lang,unique"`
+	Lang         string    `gorm:"type:varchar(10);not null;index:idx_novel_lang,unique"`
+	Title        string    `gorm:"type:varchar(500);not null"`
+	Description  *string   `gorm:"type:text"`
+	Summary      *string   `gorm:"type:text"`
+	TranslatorID string    `gorm:"type:uuid;not null;index"`
+	CreatedAt    time.Time `gorm:"autoCreateTime"`
+	UpdatedAt    time.Time `gorm:"autoUpdateTime"`
 }
 
 // BeforeCreate will set a UUID
@@ -102,15 +103,27 @@ type NovelWithTranslation struct {
 
 // NovelResponse is used for API responses
 type NovelResponse struct {
-	ID               string             `json:"id"`
-	CreatedBy        string             `json:"created_by"`
-	OriginalLanguage string             `json:"original_language"`
-	OriginalAuthor   *string            `json:"original_author"`
-	Source           *string            `json:"source"`
-	Status           *string            `json:"status"`
-	WordCount        *int               `json:"word_count"`
-	CoverMediaID     *string            `json:"cover_media_id"`
-	Translations     []NovelTranslation `json:"translations,omitempty"`
-	CreatedAt        time.Time          `json:"created_at"`
-	UpdatedAt        time.Time          `json:"updated_at"`
+	ID               string                     `json:"id"`
+	CreatedBy        string                     `json:"created_by"`
+	OriginalLanguage string                     `json:"original_language"`
+	OriginalAuthor   *string                    `json:"original_author"`
+	Source           *string                    `json:"source"`
+	Status           *string                    `json:"status"`
+	WordCount        *int                       `json:"word_count"`
+	CoverMediaID     *string                    `json:"cover_media_id"`
+	Translations     []NovelTranslationResponse `json:"translations,omitempty"`
+	CreatedAt        time.Time                  `json:"created_at"`
+	UpdatedAt        time.Time                  `json:"updated_at"`
+}
+
+type NovelTranslationResponse struct {
+	ID           string    `json:"id"`
+	NovelID      string    `json:"novel_id"`
+	Lang         string    `json:"lang"`
+	Title        string    `json:"title"`
+	Description  *string   `json:"description"`
+	Summary      *string   `json:"summary"`
+	TranslatorID string    `json:"translator_id"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }

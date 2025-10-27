@@ -1,17 +1,19 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"simple-go/internal/domain/user"
 	"simple-go/internal/middleware"
 	"simple-go/internal/service"
+	"simple-go/pkg/logger"
 	"simple-go/pkg/response"
+	"slices"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
 
-// UserHandler handles user-related HTTP requests
 type UserHandler struct {
 	userService *service.UserService
 }
@@ -22,37 +24,18 @@ func NewUserHandler(userService *service.UserService) *UserHandler {
 	}
 }
 
-// GetByID retrieves a user by ID
-// @Summary Get user by ID
-// @Tags users
-// @Security BearerAuth
-// @Produce json
-// @Param id path string true "User ID"
-// @Success 200 {object} response.Response{data=user.UserResponse}
-// @Failure 404 {object} response.Response
-// @Router /api/v1/users/{id} [get]
 func (h *UserHandler) GetByID(c *gin.Context) {
 	id := c.Param("id")
 
 	result, err := h.userService.GetByID(c.Request.Context(), id)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "User not found", err)
+		response.Error(c, http.StatusNotFound, fmt.Sprintf("User not found: %v", err))
 		return
 	}
 
 	response.Success(c, http.StatusOK, "User retrieved successfully", result)
 }
 
-// GetAll retrieves all users with pagination
-// @Summary Get all users
-// @Tags users
-// @Security BearerAuth
-// @Produce json
-// @Param page query int false "Page number" default(1)
-// @Param limit query int false "Items per page" default(10)
-// @Success 200 {object} response.PaginatedResponse{data=[]user.UserResponse}
-// @Failure 500 {object} response.Response
-// @Router /api/v1/users [get]
 func (h *UserHandler) GetAll(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
@@ -68,7 +51,7 @@ func (h *UserHandler) GetAll(c *gin.Context) {
 
 	users, total, err := h.userService.GetAll(c.Request.Context(), limit, offset)
 	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "Failed to retrieve users", err)
+		response.Error(c, http.StatusInternalServerError, fmt.Sprintf("Failed to retrieve users: %v", err))
 		return
 	}
 
@@ -87,63 +70,53 @@ func (h *UserHandler) GetAll(c *gin.Context) {
 	response.PaginatedSuccess(c, http.StatusOK, "Users retrieved successfully", users, pagination)
 }
 
-// Update updates a user
-// @Summary Update user
-// @Tags users
-// @Security BearerAuth
-// @Accept json
-// @Produce json
-// @Param id path string true "User ID"
-// @Param request body user.UpdateUserDTO true "Update data"
-// @Success 200 {object} response.Response{data=user.UserResponse}
-// @Failure 400,404 {object} response.Response
-// @Router /api/v1/users/{id} [put]
 func (h *UserHandler) Update(c *gin.Context) {
 	id := c.Param("id")
 
-	// Check if user is updating their own profile or is admin
 	userID, exists := middleware.GetUserID(c)
 	if !exists {
-		response.Error(c, http.StatusUnauthorized, "Unauthorized", nil)
+		response.Error(c, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
-	// For now, users can only update their own profile
-	// Admin checks are handled by Casbin middleware
 	if id != userID {
-		// This will be checked by Casbin, but we add extra validation
-		// In a real app, you'd check roles here or rely entirely on Casbin
+		roles, err := h.userService.GetUserRoles(c.Request.Context(), userID)
+		if err != nil {
+			logger.Error(err, "failed to get user roles")
+			response.Error(c, http.StatusInternalServerError, fmt.Sprintf("Failed to check user role: %v", err))
+			return
+		}
+
+		isAdmin := slices.Contains(roles, "admin")
+
+		if !isAdmin {
+			response.Error(c, http.StatusForbidden, "You are not allowed to update other users")
+			return
+		}
 	}
 
 	var dto user.UpdateUserDTO
 	if err := c.ShouldBindJSON(&dto); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request body", err)
+		response.Error(c, http.StatusBadRequest, fmt.Sprintf("Invalid request body: %v", err))
 		return
 	}
 
 	result, err := h.userService.Update(c.Request.Context(), id, dto)
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, "Failed to update user", err)
+		logger.Error(err, "failed to update user")
+		response.Error(c, http.StatusInternalServerError, fmt.Sprintf("Failed to update user: %v", err))
 		return
 	}
 
 	response.Success(c, http.StatusOK, "User updated successfully", result)
 }
 
-// Delete deletes a user
-// @Summary Delete user
-// @Tags users
-// @Security BearerAuth
-// @Param id path string true "User ID"
-// @Success 200 {object} response.Response
-// @Failure 404 {object} response.Response
-// @Router /api/v1/users/{id} [delete]
 func (h *UserHandler) Delete(c *gin.Context) {
 	id := c.Param("id")
 
 	err := h.userService.Delete(c.Request.Context(), id)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, "Failed to delete user", err)
+		response.Error(c, http.StatusNotFound, fmt.Sprintf("Failed to delete user: %v", err))
 		return
 	}
 

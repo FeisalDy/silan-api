@@ -31,60 +31,81 @@ func NewEnforcer(db *gorm.DB, modelPath string) (*casbin.Enforcer, error) {
 	return enforcer, nil
 }
 
-// InitializeDefaultPolicies sets up default RBAC policies
+// InitializeDefaultPolicies sets up default RBAC policies using resource-action approach
 func InitializeDefaultPolicies(enforcer *casbin.Enforcer) error {
-	// Define default policies
+	// Define default policies using resource:action format
+	// Format: {role, resource, action}
 	policies := [][]string{
+		// ============ ADMIN ROLE ============
 		// Admin can do everything
-		{"admin", "/api/v1/users", "GET"},
-		{"admin", "/api/v1/users/*", "GET"},
-		{"admin", "/api/v1/users/*", "PUT"},
-		{"admin", "/api/v1/users/*", "DELETE"},
+		{"admin", "user", "list"},
+		{"admin", "user", "read"},
+		{"admin", "user", "update"},
+		{"admin", "user", "delete"},
 
-		// Admin can manage all novels and chapters
-		{"admin", "/api/v1/novels", "POST"},
-		{"admin", "/api/v1/novels/*", "PUT"},
-		{"admin", "/api/v1/novels/*", "DELETE"},
-		{"admin", "/api/v1/novels/translations", "POST"},
-		{"admin", "/api/v1/novels/translations/*", "PUT"},
-		{"admin", "/api/v1/novels/translations/*", "DELETE"},
-		{"admin", "/api/v1/chapters", "POST"},
-		{"admin", "/api/v1/chapters/*", "PUT"},
-		{"admin", "/api/v1/chapters/*", "DELETE"},
-		{"admin", "/api/v1/chapters/translations", "POST"},
-		{"admin", "/api/v1/chapters/translations/*", "PUT"},
-		{"admin", "/api/v1/chapters/translations/*", "DELETE"},
+		{"admin", "novel", "create"},
+		{"admin", "novel", "read"},
+		{"admin", "novel", "update"},
+		{"admin", "novel", "delete"},
 
-		// Users can view their own profile
-		{"user", "/api/v1/users/*", "GET"},
+		{"admin", "novel_translation", "create"},
+		{"admin", "novel_translation", "read"},
+		{"admin", "novel_translation", "update"},
+		{"admin", "novel_translation", "delete"},
 
-		// Users can create novels and chapters
-		{"user", "/api/v1/novels", "POST"},
-		{"user", "/api/v1/novels/translations", "POST"},
-		{"user", "/api/v1/chapters", "POST"},
-		{"user", "/api/v1/chapters/translations", "POST"},
+		{"admin", "chapter", "create"},
+		{"admin", "chapter", "read"},
+		{"admin", "chapter", "update"},
+		{"admin", "chapter", "delete"},
 
-		// Author role - can manage their own novels and chapters
-		{"author", "/api/v1/novels", "POST"},
-		{"author", "/api/v1/novels/*", "PUT"},
-		{"author", "/api/v1/novels/*", "DELETE"},
-		{"author", "/api/v1/novels/translations", "POST"},
-		{"author", "/api/v1/novels/translations/*", "PUT"},
-		{"author", "/api/v1/novels/translations/*", "DELETE"},
-		{"author", "/api/v1/chapters", "POST"},
-		{"author", "/api/v1/chapters/*", "PUT"},
-		{"author", "/api/v1/chapters/*", "DELETE"},
-		{"author", "/api/v1/chapters/translations", "POST"},
-		{"author", "/api/v1/chapters/translations/*", "PUT"},
-		{"author", "/api/v1/chapters/translations/*", "DELETE"},
+		{"admin", "chapter_translation", "create"},
+		{"admin", "chapter_translation", "read"},
+		{"admin", "chapter_translation", "update"},
+		{"admin", "chapter_translation", "delete"},
 
-		// Translator role - can create and manage translations
-		{"translator", "/api/v1/novels/translations", "POST"},
-		{"translator", "/api/v1/novels/translations/*", "PUT"},
-		{"translator", "/api/v1/novels/translations/*", "DELETE"},
-		{"translator", "/api/v1/chapters/translations", "POST"},
-		{"translator", "/api/v1/chapters/translations/*", "PUT"},
-		{"translator", "/api/v1/chapters/translations/*", "DELETE"},
+		// ============ USER ROLE ============
+		// Basic user can read their own profile
+		{"user", "user", "read"},
+
+		// Basic user can create novels and chapters
+		{"user", "novel", "create"},
+		{"user", "chapter", "create"},
+
+		// ============ AUTHOR ROLE ============
+		// Author can manage novels and chapters
+		{"author", "novel", "create"},
+		{"author", "novel", "read"},
+		{"author", "novel", "update"},
+		{"author", "novel", "delete"},
+
+		{"author", "chapter", "create"},
+		{"author", "chapter", "read"},
+		{"author", "chapter", "update"},
+		{"author", "chapter", "delete"},
+
+		{"author", "novel_translation", "create"},
+		{"author", "novel_translation", "update"},
+		{"author", "novel_translation", "delete"},
+
+		{"author", "chapter_translation", "create"},
+		{"author", "chapter_translation", "update"},
+		{"author", "chapter_translation", "delete"},
+
+		// ============ TRANSLATOR ROLE ============
+		// Translator can manage translations only
+		{"translator", "novel_translation", "create"},
+		{"translator", "novel_translation", "read"},
+		{"translator", "novel_translation", "update"},
+		{"translator", "novel_translation", "delete"},
+
+		{"translator", "chapter_translation", "create"},
+		{"translator", "chapter_translation", "read"},
+		{"translator", "chapter_translation", "update"},
+		{"translator", "chapter_translation", "delete"},
+
+		// Translators need to read novels and chapters to translate them
+		{"translator", "novel", "read"},
+		{"translator", "chapter", "read"},
 	}
 
 	// Add policies
@@ -101,6 +122,6 @@ func InitializeDefaultPolicies(enforcer *casbin.Enforcer) error {
 		return err
 	}
 
-	log.Println("Default Casbin policies initialized")
+	log.Println("Default Casbin policies initialized with resource-action approach")
 	return nil
 }

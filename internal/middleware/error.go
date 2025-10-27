@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 
 	"simple-go/pkg/response"
@@ -13,7 +14,7 @@ func ErrorHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {
 			if err := recover(); err != nil {
-				response.Error(c, http.StatusInternalServerError, "Internal server error", nil)
+				response.Error(c, http.StatusInternalServerError, "Internal server error")
 				c.Abort()
 			}
 		}()
@@ -23,7 +24,7 @@ func ErrorHandler() gin.HandlerFunc {
 		// Check for errors after request processing
 		if len(c.Errors) > 0 {
 			err := c.Errors.Last()
-			response.Error(c, http.StatusInternalServerError, "An error occurred", err.Err)
+			response.Error(c, http.StatusInternalServerError, fmt.Sprintf("An error occurred: %v", err.Err))
 		}
 	}
 }

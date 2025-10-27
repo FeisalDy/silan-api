@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 	"simple-go/internal/domain/chapter"
 	"simple-go/internal/repository"
+	"simple-go/pkg/logger"
 
 	"gorm.io/gorm"
 )
@@ -46,7 +46,8 @@ func (s *ChapterService) CreateChapterWithTranslation(
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return errors.New("novel not found")
 			}
-			return fmt.Errorf("failed to verify novel: %w", err)
+			logger.Error(err, "failed to verify novel exists")
+			return errors.New("unable to create chapter")
 		}
 
 		// Check if chapter with this number already exists
@@ -63,7 +64,8 @@ func (s *ChapterService) CreateChapterWithTranslation(
 		}
 
 		if err := provider.Chapter().Create(ctx, newChapter); err != nil {
-			return fmt.Errorf("failed to create chapter: %w", err)
+			logger.Error(err, "failed to create chapter in database")
+			return errors.New("unable to create chapter")
 		}
 
 		// Create translation
@@ -76,7 +78,8 @@ func (s *ChapterService) CreateChapterWithTranslation(
 		}
 
 		if err := provider.Chapter().CreateTranslation(ctx, newTranslation); err != nil {
-			return fmt.Errorf("failed to create translation: %w", err)
+			logger.Error(err, "failed to create chapter translation")
+			return errors.New("unable to create chapter translation")
 		}
 
 		return nil
@@ -96,7 +99,8 @@ func (s *ChapterService) GetByID(ctx context.Context, id string) (*chapter.Chapt
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("chapter not found")
 		}
-		return nil, fmt.Errorf("failed to get chapter: %w", err)
+		logger.Error(err, "failed to get chapter by ID")
+		return nil, errors.New("unable to retrieve chapter")
 	}
 	return c, nil
 }
@@ -108,12 +112,14 @@ func (s *ChapterService) GetByIDWithTranslations(ctx context.Context, id string)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("chapter not found")
 		}
-		return nil, fmt.Errorf("failed to get chapter: %w", err)
+		logger.Error(err, "failed to get chapter by ID")
+		return nil, errors.New("unable to retrieve chapter")
 	}
 
 	translations, err := s.chapterRepo.GetTranslations(ctx, id)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get translations: %w", err)
+		logger.Error(err, "failed to get chapter translations")
+		return nil, errors.New("unable to retrieve chapter translations")
 	}
 
 	return &chapter.ChapterResponse{
@@ -135,17 +141,20 @@ func (s *ChapterService) GetByNovel(ctx context.Context, novelID string, limit, 
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, 0, errors.New("novel not found")
 		}
-		return nil, 0, fmt.Errorf("failed to verify novel: %w", err)
+		logger.Error(err, "failed to verify novel exists")
+		return nil, 0, errors.New("unable to retrieve chapters")
 	}
 
 	chapters, err := s.chapterRepo.GetByNovel(ctx, novelID, limit, offset)
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to get chapters: %w", err)
+		logger.Error(err, "failed to get chapters by novel")
+		return nil, 0, errors.New("unable to retrieve chapters")
 	}
 
 	count, err := s.chapterRepo.CountByNovel(ctx, novelID)
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to count chapters: %w", err)
+		logger.Error(err, "failed to count chapters")
+		return nil, 0, errors.New("unable to retrieve chapters")
 	}
 
 	return chapters, count, nil
@@ -158,7 +167,8 @@ func (s *ChapterService) GetByNovelAndNumber(ctx context.Context, novelID string
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("chapter not found")
 		}
-		return nil, fmt.Errorf("failed to get chapter: %w", err)
+		logger.Error(err, "failed to get chapter by novel and number")
+		return nil, errors.New("unable to retrieve chapter")
 	}
 	return c, nil
 }
@@ -170,7 +180,8 @@ func (s *ChapterService) Update(ctx context.Context, id string, dto chapter.Upda
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("chapter not found")
 		}
-		return nil, fmt.Errorf("failed to get chapter: %w", err)
+		logger.Error(err, "failed to get chapter for update")
+		return nil, errors.New("unable to update chapter")
 	}
 
 	// Update fields
@@ -187,7 +198,8 @@ func (s *ChapterService) Update(ctx context.Context, id string, dto chapter.Upda
 	}
 
 	if err := s.chapterRepo.Update(ctx, c); err != nil {
-		return nil, fmt.Errorf("failed to update chapter: %w", err)
+		logger.Error(err, "failed to save chapter updates")
+		return nil, errors.New("unable to update chapter")
 	}
 
 	return c, nil
@@ -196,7 +208,8 @@ func (s *ChapterService) Update(ctx context.Context, id string, dto chapter.Upda
 // Delete deletes a chapter
 func (s *ChapterService) Delete(ctx context.Context, id string) error {
 	if err := s.chapterRepo.Delete(ctx, id); err != nil {
-		return fmt.Errorf("failed to delete chapter: %w", err)
+		logger.Error(err, "failed to delete chapter")
+		return errors.New("unable to delete chapter")
 	}
 	return nil
 }
@@ -211,7 +224,8 @@ func (s *ChapterService) CreateTranslation(ctx context.Context, translatorID str
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("chapter not found")
 		}
-		return nil, fmt.Errorf("failed to verify chapter: %w", err)
+		logger.Error(err, "failed to verify chapter exists")
+		return nil, errors.New("unable to create translation")
 	}
 
 	// Check if translation already exists
@@ -229,7 +243,8 @@ func (s *ChapterService) CreateTranslation(ctx context.Context, translatorID str
 	}
 
 	if err := s.chapterRepo.CreateTranslation(ctx, ct); err != nil {
-		return nil, fmt.Errorf("failed to create translation: %w", err)
+		logger.Error(err, "failed to create chapter translation")
+		return nil, errors.New("unable to create translation")
 	}
 
 	return ct, nil
@@ -242,7 +257,8 @@ func (s *ChapterService) GetTranslation(ctx context.Context, chapterID, lang str
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("translation not found")
 		}
-		return nil, fmt.Errorf("failed to get translation: %w", err)
+		logger.Error(err, "failed to get chapter translation")
+		return nil, errors.New("unable to retrieve translation")
 	}
 	return ct, nil
 }
@@ -254,7 +270,8 @@ func (s *ChapterService) UpdateTranslation(ctx context.Context, id string, dto c
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("translation not found")
 		}
-		return nil, fmt.Errorf("failed to get translation: %w", err)
+		logger.Error(err, "failed to get translation for update")
+		return nil, errors.New("unable to update translation")
 	}
 
 	// Update fields
@@ -266,7 +283,8 @@ func (s *ChapterService) UpdateTranslation(ctx context.Context, id string, dto c
 	}
 
 	if err := s.chapterRepo.UpdateTranslation(ctx, ct); err != nil {
-		return nil, fmt.Errorf("failed to update translation: %w", err)
+		logger.Error(err, "failed to save translation updates")
+		return nil, errors.New("unable to update translation")
 	}
 
 	return ct, nil
@@ -275,7 +293,8 @@ func (s *ChapterService) UpdateTranslation(ctx context.Context, id string, dto c
 // DeleteTranslation deletes a translation
 func (s *ChapterService) DeleteTranslation(ctx context.Context, id string) error {
 	if err := s.chapterRepo.DeleteTranslation(ctx, id); err != nil {
-		return fmt.Errorf("failed to delete translation: %w", err)
+		logger.Error(err, "failed to delete chapter translation")
+		return errors.New("unable to delete translation")
 	}
 	return nil
 }

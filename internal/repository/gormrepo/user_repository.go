@@ -39,6 +39,14 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*user.Us
 	return &u, nil
 }
 
+func (r *userRepository) GetByUsername(ctx context.Context, username string) (*user.User, error) {
+	var u user.User
+	err := r.db.WithContext(ctx).Where("username = ?", username).First(&u).Error
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
 func (r *userRepository) GetAll(ctx context.Context, limit, offset int) ([]user.User, error) {
 	var users []user.User
 	query := r.db.WithContext(ctx).Order("created_at DESC")

@@ -41,3 +41,7 @@ func (rp *repoProvider) Novel() repository.NovelRepository {
 func (rp *repoProvider) Chapter() repository.ChapterRepository {
 	return NewChapterRepository(rp.db)
 }
+
+func (rp *repoProvider) Media() repository.MediaRepository {
+	return NewMediaRepository(rp.db)
+}

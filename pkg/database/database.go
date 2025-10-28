@@ -3,6 +3,13 @@ package database
 import (
 	"fmt"
 	"log"
+	"simple-go/internal/domain/chapter"
+	"simple-go/internal/domain/genre"
+	"simple-go/internal/domain/novel"
+	"simple-go/internal/domain/role"
+	"simple-go/internal/domain/tag"
+	"simple-go/internal/domain/user"
+
 	"simple-go/pkg/config"
 
 	"gorm.io/driver/postgres"
@@ -31,11 +38,42 @@ func Connect(cfg *config.DatabaseConfig) (*gorm.DB, error) {
 
 	log.Println("Database connection established")
 
+	if err := migrateDatabase(db); err != nil {
+		return nil, fmt.Errorf("failed to migrate database: %w", err)
+
+	}
+
 	if err := addTrigramIndexes(db); err != nil {
 		return nil, fmt.Errorf("failed to add trigram indexes: %w", err)
 	}
 
 	return db, nil
+}
+
+func migrateDatabase(db *gorm.DB) error {
+	log.Println("Running database migrations...")
+
+	err := db.AutoMigrate(
+		&user.User{},
+		&role.Role{},
+		&role.UserRole{},
+		&genre.Genre{},
+		&genre.NovelGenre{},
+		&tag.Tag{},
+		&tag.NovelTag{},
+		&novel.Novel{},
+		&novel.NovelTranslation{},
+		&chapter.Chapter{},
+		&chapter.ChapterTranslation{},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	log.Println("Database migrations completed successfully")
+
+	return nil
 }
 
 type TrigramIndex struct {

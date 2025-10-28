@@ -13,6 +13,7 @@ type Config struct {
 	Database DatabaseConfig
 	JWT      JWTConfig
 	Casbin   CasbinConfig
+	Media    MediaConfig
 }
 
 type ServerConfig struct {
@@ -39,7 +40,19 @@ type CasbinConfig struct {
 	ModelPath string
 }
 
+type MediaConfig struct {
+	ImgBBAPIKey string
+	ImgBBTTL    uint64
+}
+
 func Load() (*Config, error) {
+	// Parse media TTL (seconds)
+	var imgbbTTL uint64 = 0
+	if v := getEnv("IMGBB_TTL", "0"); v != "" {
+		if n, err := strconv.ParseUint(v, 10, 64); err == nil {
+			imgbbTTL = n
+		}
+	}
 	// Load .env file if exists (ignore error in production)
 	_ = godotenv.Load()
 
@@ -68,6 +81,10 @@ func Load() (*Config, error) {
 		},
 		Casbin: CasbinConfig{
 			ModelPath: getEnv("CASBIN_MODEL_PATH", "./configs/casbin_model.conf"),
+		},
+		Media: MediaConfig{
+			ImgBBAPIKey: getEnv("IMGBB_API_KEY", ""),
+			ImgBBTTL:    imgbbTTL,
 		},
 	}, nil
 }

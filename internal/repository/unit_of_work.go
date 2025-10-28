@@ -15,4 +15,5 @@ type RepositoryProvider interface {
 	Role() RoleRepository
 	Novel() NovelRepository
 	Chapter() ChapterRepository
+	Media() MediaRepository
 }

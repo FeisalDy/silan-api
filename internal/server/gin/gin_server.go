@@ -39,7 +39,6 @@ func (s *GinServer) Start(addr string) error {
 	return s.engine.Run(addr)
 }
 
-// Shutdown gracefully shuts down the Gin server
 func (s *GinServer) Shutdown() error {
 	log.Println("Shutting down Gin server...")
 	// Gin doesn't have built-in graceful shutdown in the simple API
@@ -86,6 +85,8 @@ func setupRoutes(router *gin.Engine, cfg *server.Config) {
 		{
 			novels.POST("", middleware.RequirePermission("novel", "create", cfg.Enforcer, roleGetter), cfg.NovelHandler.Create)
 			novels.DELETE("/:id", middleware.RequirePermission("novel", "delete", cfg.Enforcer, roleGetter), cfg.NovelHandler.Delete)
+			// Upload or update cover media
+			novels.PATCH("/:id/cover", middleware.RequirePermission("novel", "update", cfg.Enforcer, roleGetter), cfg.NovelHandler.UpdateCoverMedia)
 
 			novels.POST("/translations", middleware.RequirePermission("novel_translation", "create", cfg.Enforcer, roleGetter), cfg.NovelHandler.CreateTranslation)
 			novels.DELETE("/translations/:translation_id", middleware.RequirePermission("novel_translation", "delete", cfg.Enforcer, roleGetter), cfg.NovelHandler.DeleteTranslation)

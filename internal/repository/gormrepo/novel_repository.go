@@ -34,10 +34,11 @@ func (r *novelRepository) GetByID(ctx context.Context, id string) (*novel.Novel,
 
 	return &n, nil
 }
+
 func (r *novelRepository) GetByIDWithTranslations(ctx context.Context, id, lang string) (*novel.Novel, error) {
 	var n novel.Novel
 
-	err := r.db.WithContext(ctx).
+	err := r.db.WithContext(ctx).Preload("Media").
 		Where("id = ?", id).
 		Preload("Translations", func(db *gorm.DB) *gorm.DB {
 			if lang != "" {
@@ -86,6 +87,8 @@ func (r *novelRepository) GetAll(ctx context.Context, limit, offset int, title, 
 		return db
 	})
 
+	query = query.Preload("Media")
+
 	err := query.Find(&novels).Error
 	return novels, err
 }
@@ -98,6 +101,22 @@ func (r *novelRepository) Delete(ctx context.Context, id string) error {
 	if result.RowsAffected == 0 {
 		return fmt.Errorf("novel not found")
 	}
+	return nil
+}
+
+func (r *novelRepository) UpdateCoverMedia(ctx context.Context, novelID, mediaID string) error {
+	result := r.db.WithContext(ctx).Model(&novel.Novel{}).
+		Where("id = ?", novelID).
+		Update("cover_media_id", mediaID)
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
 	return nil
 }
 

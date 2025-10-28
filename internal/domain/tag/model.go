@@ -9,12 +9,12 @@ import (
 
 // Tag represents a tag that can be applied to novels
 type Tag struct {
-	ID          string    `gorm:"type:uuid;primaryKey" json:"id"`
-	Name        string    `gorm:"type:varchar(100);unique;not null" json:"name"`
-	Slug        string    `gorm:"type:varchar(100);unique;not null;index" json:"slug"`
-	Description *string   `gorm:"type:text" json:"description"`
-	CreatedAt   time.Time `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt   time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+	ID          string    `gorm:"type:uuid;primaryKey"`
+	Name        string    `gorm:"type:varchar(100);unique;not null"`
+	Slug        string    `gorm:"type:varchar(100);unique;not null;index"`
+	Description *string   `gorm:"type:text"`
+	CreatedAt   time.Time `gorm:"autoCreateTime"`
+	UpdatedAt   time.Time `gorm:"autoUpdateTime"`
 }
 
 // BeforeCreate will set a UUID

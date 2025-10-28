@@ -2,6 +2,7 @@ package response
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -41,13 +42,28 @@ func Success(c *gin.Context, statusCode int, message string, data interface{}) {
 	})
 }
 
-// Error sends an error response
-func Error(c *gin.Context, statusCode int, message string, errorDetails ...any) {
-	var errDetail any
-	if len(errorDetails) > 0 {
-		errDetail = errorDetails[0]
-	} else {
+func Error(c *gin.Context, statusCode int, messageOrErr any, errorDetails ...any) {
+	var (
+		message   string
+		errDetail any
+	)
+
+	if err, ok := messageOrErr.(error); ok {
+		message = err.Error()
 		errDetail = nil
+	} else if msg, ok := messageOrErr.(string); ok {
+		message = msg
+	} else {
+		message = "Unknown error"
+	}
+
+	if len(errorDetails) > 0 {
+		detail := errorDetails[0]
+		if e, ok := detail.(error); ok {
+			errDetail = e.Error()
+		} else {
+			errDetail = detail
+		}
 	}
 
 	c.JSON(statusCode, Response{
@@ -67,24 +83,33 @@ func PaginatedSuccess(c *gin.Context, statusCode int, message string, data inter
 	})
 }
 
-func MapValidationErrors(err error) map[string]string {
+func MapValidationErrors(err error, dto any) map[string]string {
 	errors := make(map[string]string)
 
 	if err == nil {
 		return errors
 	}
 
-	// Check if it's a validator.ValidationErrors
 	if ve, ok := err.(validator.ValidationErrors); ok {
+		t := reflect.TypeOf(dto)
+		if t.Kind() == reflect.Pointer {
+			t = t.Elem()
+		}
+
 		for _, fe := range ve {
-			// Convert StructNamespace to JSON-friendly key, e.g. "Novel.OriginalLanguage" -> "original_language"
-			key := fe.StructNamespace() // e.g. "Novel.OriginalLanguage"
-			keyParts := strings.Split(key, ".")
-			key = strings.ToLower(keyParts[len(keyParts)-1]) // take the last part and lowercase
-			errors[key] = fmt.Sprintf("Field validation for '%s' failed on the '%s' tag", fe.Field(), fe.Tag())
+			fieldName := fe.StructField() // e.g. "OriginalLanguage"
+			field, _ := t.FieldByName(fieldName)
+
+			// Get json tag name
+			jsonTag := field.Tag.Get("json")
+			jsonKey := strings.Split(jsonTag, ",")[0]
+			if jsonKey == "" || jsonKey == "-" {
+				jsonKey = strings.ToLower(fieldName)
+			}
+
+			errors[jsonKey] = fmt.Sprintf("Field validation for '%s' failed on the '%s' tag", jsonKey, fe.Tag())
 		}
 	} else {
-		// fallback
 		errors["error"] = err.Error()
 	}
 

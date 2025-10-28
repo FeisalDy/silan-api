@@ -1,13 +1,6 @@
 package app
 
 import (
-	"log"
-	"simple-go/internal/domain/chapter"
-	"simple-go/internal/domain/genre"
-	"simple-go/internal/domain/novel"
-	"simple-go/internal/domain/role"
-	"simple-go/internal/domain/tag"
-	"simple-go/internal/domain/user"
 	"simple-go/internal/handler"
 	"simple-go/internal/repository/gormrepo"
 	"simple-go/internal/service"
@@ -29,6 +22,7 @@ type App struct {
 	NovelHandler   *handler.NovelHandler
 	ChapterHandler *handler.ChapterHandler
 	UserService    *service.UserService
+	MediaService   *service.MediaService
 	JWTManager     *auth.JWTManager
 	Enforcer       *casbin.Enforcer
 }
@@ -47,16 +41,12 @@ func Initialize() (*App, error) {
 		return nil, err
 	}
 
-	// Auto-migrate database schema
-	if err := migrateDatabase(db); err != nil {
-		return nil, err
-	}
-
 	// Initialize repositories
 	userRepo := gormrepo.NewUserRepository(db)
 	roleRepo := gormrepo.NewRoleRepository(db)
 	novelRepo := gormrepo.NewNovelRepository(db)
 	chapterRepo := gormrepo.NewChapterRepository(db)
+	mediaRepo := gormrepo.NewMediaRepository(db)
 	uow := gormrepo.NewUnitOfWork(db)
 
 	// Initialize Casbin
@@ -73,10 +63,14 @@ func Initialize() (*App, error) {
 	// Initialize JWT manager
 	jwtManager := auth.NewJWTManager(cfg.JWT.Secret, cfg.JWT.ExpirationHours)
 
+	// Initialize upload + media services (ImgBB)
+	uploadService := service.NewUploadService(nil, cfg.Media.ImgBBAPIKey, cfg.Media.ImgBBTTL)
+	mediaService := service.NewMediaService(mediaRepo, uploadService)
+
 	// Initialize services
 	authService := service.NewAuthService(uow, userRepo, roleRepo, jwtManager)
 	userService := service.NewUserService(userRepo, roleRepo)
-	novelService := service.NewNovelService(uow, novelRepo)
+	novelService := service.NewNovelService(uow, novelRepo, mediaService)
 	chapterService := service.NewChapterService(uow, chapterRepo, novelRepo)
 
 	// Initialize handlers
@@ -93,33 +87,8 @@ func Initialize() (*App, error) {
 		NovelHandler:   novelHandler,
 		ChapterHandler: chapterHandler,
 		UserService:    userService,
+		MediaService:   mediaService,
 		JWTManager:     jwtManager,
 		Enforcer:       enforcer,
 	}, nil
-}
-
-// migrateDatabase runs all database migrations
-func migrateDatabase(db *gorm.DB) error {
-	log.Println("Running database migrations...")
-
-	err := db.AutoMigrate(
-		&user.User{},
-		&role.Role{},
-		&role.UserRole{},
-		&genre.Genre{},
-		&genre.NovelGenre{},
-		&tag.Tag{},
-		&tag.NovelTag{},
-		&novel.Novel{},
-		&novel.NovelTranslation{},
-		&chapter.Chapter{},
-		&chapter.ChapterTranslation{},
-	)
-
-	if err != nil {
-		return err
-	}
-
-	log.Println("Database migrations completed successfully")
-	return nil
 }

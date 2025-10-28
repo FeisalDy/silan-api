@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	dommedia "simple-go/internal/domain/media"
 	"simple-go/internal/domain/novel"
 	"simple-go/internal/repository"
 	"simple-go/pkg/logger"
@@ -13,12 +14,14 @@ import (
 type NovelService struct {
 	uow       repository.UnitOfWork
 	novelRepo repository.NovelRepository
+	mediaSrvc *MediaService
 }
 
-func NewNovelService(uow repository.UnitOfWork, novelRepo repository.NovelRepository) *NovelService {
+func NewNovelService(uow repository.UnitOfWork, novelRepo repository.NovelRepository, mediaSrvc *MediaService) *NovelService {
 	return &NovelService{
 		uow:       uow,
 		novelRepo: novelRepo,
+		mediaSrvc: mediaSrvc,
 	}
 }
 
@@ -26,7 +29,6 @@ func (s *NovelService) CreateNovelWithTranslation(
 	ctx context.Context,
 	creatorID string,
 	dto novel.CreateNovelDTO,
-	translationDTO novel.CreateNovelTranslationDTO,
 ) (*novel.Novel, *novel.NovelTranslation, error) {
 	var newNovel *novel.Novel
 	var newTranslation *novel.NovelTranslation
@@ -38,7 +40,6 @@ func (s *NovelService) CreateNovelWithTranslation(
 			OriginalAuthor:   dto.OriginalAuthor,
 			Source:           dto.Source,
 			Status:           dto.Status,
-			CoverMediaID:     dto.CoverMediaID,
 		}
 
 		if err := provider.Novel().Create(ctx, newNovel); err != nil {
@@ -48,10 +49,9 @@ func (s *NovelService) CreateNovelWithTranslation(
 
 		newTranslation = &novel.NovelTranslation{
 			NovelID:      newNovel.ID,
-			Lang:         translationDTO.Lang,
-			Title:        translationDTO.Title,
-			Description:  translationDTO.Description,
-			Summary:      translationDTO.Summary,
+			Lang:         dto.OriginalLanguage,
+			Title:        dto.Title,
+			Description:  dto.Description,
 			TranslatorID: creatorID,
 		}
 
@@ -70,7 +70,7 @@ func (s *NovelService) CreateNovelWithTranslation(
 	return newNovel, newTranslation, nil
 }
 
-func (s *NovelService) GetByIDWithTranslations(ctx context.Context, id, lang string) (*novel.NovelResponse, error) {
+func (s *NovelService) GetByIDWithTranslations(ctx context.Context, id, lang string) (*novel.NovelResponseDTO, error) {
 	n, err := s.novelRepo.GetByIDWithTranslations(ctx, id, lang)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -80,28 +80,39 @@ func (s *NovelService) GetByIDWithTranslations(ctx context.Context, id, lang str
 		return nil, errors.New("unable to retrieve novel")
 	}
 
-	var novelTranslationResponse []novel.NovelTranslationResponse
+	var novelTranslationResponse []novel.NovelTranslationResponseDTO
 
 	for _, t := range n.Translations {
-		novelTranslationResponse = append(novelTranslationResponse, novel.NovelTranslationResponse(t))
+		novelTranslationResponse = append(novelTranslationResponse, novel.NovelTranslationResponseDTO{
+			ID:          t.ID,
+			Lang:        t.Lang,
+			Title:       t.Title,
+			Description: t.Description,
+			CreatedAt:   t.CreatedAt,
+			UpdatedAt:   t.UpdatedAt,
+		})
 	}
 
-	return &novel.NovelResponse{
+	var coverURL *string
+	if n.Media != nil && n.Media.URL != nil {
+		coverURL = n.Media.URL // already *string
+	}
+
+	return &novel.NovelResponseDTO{
 		ID:               n.ID,
-		CreatedBy:        n.CreatedBy,
 		OriginalLanguage: n.OriginalLanguage,
 		OriginalAuthor:   n.OriginalAuthor,
 		Source:           n.Source,
 		Status:           n.Status,
 		WordCount:        n.WordCount,
-		CoverMediaID:     n.CoverMediaID,
+		CoverURL:         coverURL,
 		Translations:     novelTranslationResponse,
 		CreatedAt:        n.CreatedAt,
 		UpdatedAt:        n.UpdatedAt,
 	}, nil
 }
 
-func (s *NovelService) GetAll(ctx context.Context, limit, offset int, title, lang string) ([]novel.NovelResponse, int64, error) {
+func (s *NovelService) GetAll(ctx context.Context, limit, offset int, title, lang string) ([]novel.NovelResponseDTO, int64, error) {
 	novels, err := s.novelRepo.GetAll(ctx, limit, offset, title, lang)
 	if err != nil {
 		logger.Error(err, "failed to get all novels")
@@ -114,29 +125,40 @@ func (s *NovelService) GetAll(ctx context.Context, limit, offset int, title, lan
 		return nil, 0, errors.New("unable to retrieve novels")
 	}
 
-	var novelResponses []novel.NovelResponse
+	var novelResponses []novel.NovelResponseDTO
 
 	for _, n := range novels {
-		var translations []novel.NovelTranslationResponse
+		// Prepare translations
+		var translations []novel.NovelTranslationResponseDTO
 		for _, t := range n.Translations {
-			translations = append(translations, novel.NovelTranslationResponse(t))
+			translations = append(translations, novel.NovelTranslationResponseDTO{
+				ID:          t.ID,
+				Lang:        t.Lang,
+				Title:       t.Title,
+				Description: t.Description,
+				CreatedAt:   t.CreatedAt,
+				UpdatedAt:   t.UpdatedAt,
+			})
 		}
 
-		novelResponse := novel.NovelResponse{
+		var coverURL *string
+		if n.Media != nil && n.Media.URL != nil {
+			coverURL = n.Media.URL // already *string
+		}
+
+		// Build the response DTO
+		novelResponses = append(novelResponses, novel.NovelResponseDTO{
 			ID:               n.ID,
-			CreatedBy:        n.CreatedBy,
 			OriginalLanguage: n.OriginalLanguage,
 			OriginalAuthor:   n.OriginalAuthor,
 			Source:           n.Source,
 			Status:           n.Status,
 			WordCount:        n.WordCount,
-			CoverMediaID:     n.CoverMediaID,
+			CoverURL:         coverURL,
 			Translations:     translations,
 			CreatedAt:        n.CreatedAt,
 			UpdatedAt:        n.UpdatedAt,
-		}
-
-		novelResponses = append(novelResponses, novelResponse)
+		})
 	}
 
 	return novelResponses, count, nil
@@ -151,6 +173,32 @@ func (s *NovelService) Delete(ctx context.Context, id string) error {
 		return errors.New("unable to delete novel")
 	}
 	return nil
+}
+
+func (s *NovelService) UpdateCoverMedia(ctx context.Context, id string, dto novel.UpdateCoverMediaDTO) error {
+	uploadParams := dommedia.UploadAndSaveDTO{
+		Name:       dto.FileName,
+		FileBytes:  dto.FileBytes,
+		UploaderID: dto.UploaderID,
+	}
+
+	return s.uow.Do(ctx, func(provider repository.RepositoryProvider) error {
+		savedMedia, _, err := s.mediaSrvc.UploadAndSaveWithRepo(ctx, provider.Media(), uploadParams)
+		if err != nil {
+			logger.Error(err, "failed to upload and save media for novel cover")
+			return errors.New("unable to upload cover media")
+		}
+
+		if err := provider.Novel().UpdateCoverMedia(ctx, id, savedMedia.ID); err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return errors.New("novel not found")
+			}
+			logger.Error(err, "failed to update novel cover media")
+			return errors.New("unable to update novel cover")
+		}
+
+		return nil
+	})
 }
 
 func (s *NovelService) CreateTranslation(ctx context.Context, translatorID string, dto novel.CreateNovelTranslationDTO) (*novel.NovelTranslation, error) {
@@ -173,7 +221,6 @@ func (s *NovelService) CreateTranslation(ctx context.Context, translatorID strin
 		Lang:         dto.Lang,
 		Title:        dto.Title,
 		Description:  dto.Description,
-		Summary:      dto.Summary,
 		TranslatorID: translatorID,
 	}
 

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"simple-go/internal/domain/novel"
 	"simple-go/internal/middleware"
@@ -12,7 +13,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// NovelHandler handles novel-related HTTP requests
 type NovelHandler struct {
 	novelService *service.NovelService
 }
@@ -30,21 +30,17 @@ func (h *NovelHandler) Create(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		Novel       novel.CreateNovelDTO            `json:"novel" binding:"required"`
-		Translation novel.CreateNovelTranslationDTO `json:"translation" binding:"required"`
-	}
+	var req novel.CreateNovelDTO
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Invalid request body", response.MapValidationErrors(err))
+		response.Error(c, http.StatusBadRequest, "Invalid request body", response.MapValidationErrors(err, novel.CreateNovelDTO{}))
 		return
 	}
 
 	newNovel, newTranslation, err := h.novelService.CreateNovelWithTranslation(
 		c.Request.Context(),
 		userID,
-		req.Novel,
-		req.Translation,
+		req,
 	)
 
 	if err != nil {
@@ -119,6 +115,48 @@ func (h *NovelHandler) Delete(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusOK, "Novel deleted successfully", nil)
+}
+
+func (h *NovelHandler) UpdateCoverMedia(c *gin.Context) {
+	id := c.Param("id")
+
+	userID, exists := middleware.GetUserID(c)
+	if !exists {
+		response.Error(c, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	fileHeader, err := c.FormFile("cover_media")
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Missing cover_media file")
+		return
+	}
+
+	file, err := fileHeader.Open()
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "Failed to open file")
+		return
+	}
+	defer file.Close()
+
+	fileBytes, err := io.ReadAll(file)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "Failed to read file", nil)
+		return
+	}
+
+	var req novel.UpdateCoverMediaDTO
+
+	req.FileName = fileHeader.Filename
+	req.FileBytes = fileBytes
+	req.UploaderID = userID
+
+	if err := h.novelService.UpdateCoverMedia(c.Request.Context(), id, req); err != nil {
+		response.Error(c, http.StatusInternalServerError, "Failed to update cover media", err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Cover media updated successfully", nil)
 }
 
 func (h *NovelHandler) CreateTranslation(c *gin.Context) {

@@ -11,6 +11,7 @@ type NovelRepository interface {
 	GetByIDWithTranslations(ctx context.Context, id, lang string) (*novel.Novel, error)
 	GetAll(ctx context.Context, limit, offset int, title, lang string) ([]novel.Novel, error)
 	Delete(ctx context.Context, id string) error
+	UpdateCoverMedia(ctx context.Context, novelID, mediaID string) error
 	Count(ctx context.Context) (int64, error)
 
 	CreateTranslation(ctx context.Context, nt *novel.NovelTranslation) error

@@ -5,6 +5,7 @@ import (
 	"errors"
 	dommedia "simple-go/internal/domain/media"
 	"simple-go/internal/domain/novel"
+	"simple-go/internal/domain/volume"
 	"simple-go/internal/repository"
 	"simple-go/pkg/logger"
 
@@ -12,16 +13,18 @@ import (
 )
 
 type NovelService struct {
-	uow       repository.UnitOfWork
-	novelRepo repository.NovelRepository
-	mediaSrvc *MediaService
+	uow        repository.UnitOfWork
+	novelRepo  repository.NovelRepository
+	mediaSrvc  *MediaService
+	volumeSrvc *VolumeService
 }
 
-func NewNovelService(uow repository.UnitOfWork, novelRepo repository.NovelRepository, mediaSrvc *MediaService) *NovelService {
+func NewNovelService(uow repository.UnitOfWork, novelRepo repository.NovelRepository, mediaSrvc *MediaService, volumeSrvc *VolumeService) *NovelService {
 	return &NovelService{
-		uow:       uow,
-		novelRepo: novelRepo,
-		mediaSrvc: mediaSrvc,
+		uow:        uow,
+		novelRepo:  novelRepo,
+		mediaSrvc:  mediaSrvc,
+		volumeSrvc: volumeSrvc,
 	}
 }
 
@@ -70,8 +73,8 @@ func (s *NovelService) CreateNovelWithTranslation(
 	return newNovel, newTranslation, nil
 }
 
-func (s *NovelService) GetByIDWithTranslations(ctx context.Context, id, lang string) (*novel.NovelResponseDTO, error) {
-	n, err := s.novelRepo.GetByIDWithTranslations(ctx, id, lang)
+func (s *NovelService) GetByID(ctx context.Context, id, lang string) (*novel.NovelResponseDTO, error) {
+	n, err := s.novelRepo.GetByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("novel not found")
@@ -80,22 +83,37 @@ func (s *NovelService) GetByIDWithTranslations(ctx context.Context, id, lang str
 		return nil, errors.New("unable to retrieve novel")
 	}
 
-	var novelTranslationResponse []novel.NovelTranslationResponseDTO
+	var selected *novel.NovelTranslation
 
-	for _, t := range n.Translations {
-		novelTranslationResponse = append(novelTranslationResponse, novel.NovelTranslationResponseDTO{
-			ID:          t.ID,
-			Lang:        t.Lang,
-			Title:       t.Title,
-			Description: t.Description,
-			CreatedAt:   t.CreatedAt,
-			UpdatedAt:   t.UpdatedAt,
-		})
+	if lang != "" {
+		for i := range n.Translations {
+			if n.Translations[i].Lang == lang {
+				selected = &n.Translations[i]
+				break
+			}
+		}
+	}
+
+	if selected == nil {
+		for i := range n.Translations {
+			if n.Translations[i].Lang == n.OriginalLanguage {
+				selected = &n.Translations[i]
+				break
+			}
+		}
+	}
+
+	if selected == nil && len(n.Translations) > 0 {
+		selected = &n.Translations[0]
+	}
+
+	if selected == nil {
+		return nil, errors.New("no translations available for this novel")
 	}
 
 	var coverURL *string
 	if n.Media != nil && n.Media.URL != nil {
-		coverURL = n.Media.URL // already *string
+		coverURL = n.Media.URL
 	}
 
 	return &novel.NovelResponseDTO{
@@ -106,7 +124,9 @@ func (s *NovelService) GetByIDWithTranslations(ctx context.Context, id, lang str
 		Status:           n.Status,
 		WordCount:        n.WordCount,
 		CoverURL:         coverURL,
-		Translations:     novelTranslationResponse,
+		Lang:             selected.Lang,
+		Title:            selected.Title,
+		Description:      selected.Description,
 		CreatedAt:        n.CreatedAt,
 		UpdatedAt:        n.UpdatedAt,
 	}, nil
@@ -125,29 +145,43 @@ func (s *NovelService) GetAll(ctx context.Context, limit, offset int, title, lan
 		return nil, 0, errors.New("unable to retrieve novels")
 	}
 
-	var novelResponses []novel.NovelResponseDTO
+	var responses []novel.NovelResponseDTO
 
 	for _, n := range novels {
-		// Prepare translations
-		var translations []novel.NovelTranslationResponseDTO
-		for _, t := range n.Translations {
-			translations = append(translations, novel.NovelTranslationResponseDTO{
-				ID:          t.ID,
-				Lang:        t.Lang,
-				Title:       t.Title,
-				Description: t.Description,
-				CreatedAt:   t.CreatedAt,
-				UpdatedAt:   t.UpdatedAt,
-			})
+		var selected *novel.NovelTranslation
+
+		if lang != "" {
+			for i := range n.Translations {
+				if n.Translations[i].Lang == lang {
+					selected = &n.Translations[i]
+					break
+				}
+			}
+		}
+
+		if selected == nil {
+			for i := range n.Translations {
+				if n.Translations[i].Lang == n.OriginalLanguage {
+					selected = &n.Translations[i]
+					break
+				}
+			}
+		}
+
+		if selected == nil && len(n.Translations) > 0 {
+			selected = &n.Translations[0]
+		}
+
+		if selected == nil {
+			continue
 		}
 
 		var coverURL *string
 		if n.Media != nil && n.Media.URL != nil {
-			coverURL = n.Media.URL // already *string
+			coverURL = n.Media.URL
 		}
 
-		// Build the response DTO
-		novelResponses = append(novelResponses, novel.NovelResponseDTO{
+		responses = append(responses, novel.NovelResponseDTO{
 			ID:               n.ID,
 			OriginalLanguage: n.OriginalLanguage,
 			OriginalAuthor:   n.OriginalAuthor,
@@ -155,13 +189,15 @@ func (s *NovelService) GetAll(ctx context.Context, limit, offset int, title, lan
 			Status:           n.Status,
 			WordCount:        n.WordCount,
 			CoverURL:         coverURL,
-			Translations:     translations,
+			Lang:             selected.Lang,
+			Title:            selected.Title,
+			Description:      selected.Description,
 			CreatedAt:        n.CreatedAt,
 			UpdatedAt:        n.UpdatedAt,
 		})
 	}
 
-	return novelResponses, count, nil
+	return responses, count, nil
 }
 
 func (s *NovelService) Delete(ctx context.Context, id string) error {
@@ -238,4 +274,8 @@ func (s *NovelService) DeleteTranslation(ctx context.Context, id string) error {
 		return errors.New("unable to delete translation")
 	}
 	return nil
+}
+
+func (s *NovelService) GetNovelVolumes(ctx context.Context, novelID, lang string) ([]volume.VolumeResponseDTO, error) {
+	return s.volumeSrvc.GetNovelVolumes(ctx, novelID, lang)
 }

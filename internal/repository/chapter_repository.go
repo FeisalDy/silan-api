@@ -9,13 +9,13 @@ import (
 type ChapterRepository interface {
 	Create(ctx context.Context, c *chapter.Chapter) error
 	GetByID(ctx context.Context, id string) (*chapter.Chapter, error)
-	GetByNovel(ctx context.Context, novelID string, limit, offset int) ([]chapter.Chapter, error)
-	GetByNovelAndNumber(ctx context.Context, novelID string, number int) (*chapter.Chapter, error)
+	GetByVolume(ctx context.Context, volumeID string, limit, offset int) ([]chapter.Chapter, error)
+	GetByVolumeAndNumber(ctx context.Context, volumeID string, number int) (*chapter.Chapter, error)
 	GetAll(ctx context.Context, limit, offset int) ([]chapter.Chapter, error)
 	Update(ctx context.Context, c *chapter.Chapter) error
 	Delete(ctx context.Context, id string) error
 	Count(ctx context.Context) (int64, error)
-	CountByNovel(ctx context.Context, novelID string) (int64, error)
+	CountByVolume(ctx context.Context, volumeID string) (int64, error)
 
 	// Translation operations
 	CreateTranslation(ctx context.Context, ct *chapter.ChapterTranslation) error

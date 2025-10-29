@@ -17,12 +17,12 @@ type Server interface {
 
 // Config holds all the dependencies needed to create a server
 type Config struct {
-	Config         *config.Config
-	JWTManager     *auth.JWTManager
-	Enforcer       *casbin.Enforcer
-	AuthHandler    *handler.AuthHandler
-	UserHandler    *handler.UserHandler
-	NovelHandler   *handler.NovelHandler
-	ChapterHandler *handler.ChapterHandler
-	UserService    *service.UserService
+	Config       *config.Config
+	JWTManager   *auth.JWTManager
+	Enforcer     *casbin.Enforcer
+	AuthHandler  *handler.AuthHandler
+	UserHandler  *handler.UserHandler
+	NovelHandler *handler.NovelHandler
+	// ChapterHandler *handler.ChapterHandler
+	UserService *service.UserService
 }

@@ -16,14 +16,14 @@ func main() {
 
 	// Create server configuration
 	serverConfig := &server.Config{
-		Config:         application.Config,
-		JWTManager:     application.JWTManager,
-		Enforcer:       application.Enforcer,
-		AuthHandler:    application.AuthHandler,
-		UserHandler:    application.UserHandler,
-		NovelHandler:   application.NovelHandler,
-		ChapterHandler: application.ChapterHandler,
-		UserService:    application.UserService,
+		Config:       application.Config,
+		JWTManager:   application.JWTManager,
+		Enforcer:     application.Enforcer,
+		AuthHandler:  application.AuthHandler,
+		UserHandler:  application.UserHandler,
+		NovelHandler: application.NovelHandler,
+		// ChapterHandler: application.ChapterHandler,
+		UserService: application.UserService,
 	}
 
 	srv := ginserver.NewGinServer(serverConfig)

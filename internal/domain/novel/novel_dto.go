@@ -13,30 +13,30 @@ type CreateNovelDTO struct {
 }
 
 type CreateNovelTranslationDTO struct {
-	NovelID     string  `json:"novel_id"`
+	NovelID     string  `json:"novel_id" binding:"required"`
 	Lang        string  `json:"lang" binding:"required"`
 	Title       string  `json:"title" binding:"required"`
 	Description *string `json:"description"`
 }
 
 type NovelResponseDTO struct {
-	ID string `json:"id"`
-	// CreatedBy        string  `json:"created_by"`
-	OriginalLanguage string  `json:"original_language"`
-	OriginalAuthor   *string `json:"original_author"`
-	Source           *string `json:"source"`
-	Status           *string `json:"status"`
-	WordCount        *int    `json:"word_count"`
-	// CoverMediaID     *string                       `json:"cover_media_id"`
-	CoverURL     *string                       `json:"cover_url"`
-	Translations []NovelTranslationResponseDTO `json:"translations,omitempty"`
-	CreatedAt    time.Time                     `json:"created_at"`
-	UpdatedAt    time.Time                     `json:"updated_at"`
+	ID               string    `json:"id"`
+	OriginalLanguage string    `json:"original_language"`
+	OriginalAuthor   *string   `json:"original_author"`
+	Source           *string   `json:"source"`
+	Status           *string   `json:"status"`
+	WordCount        *int      `json:"word_count"`
+	CoverURL         *string   `json:"cover_url"`
+	Lang             string    `json:"lang"`
+	Title            string    `json:"title"`
+	Description      *string   `json:"description"`
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
 }
 
 type NovelTranslationResponseDTO struct {
-	ID string `json:"id"`
-	// NovelID      string    `json:"novel_id,omitempty"`
+	ID          string  `json:"id"`
+	NovelID     string  `json:"novel_id"`
 	Lang        string  `json:"lang"`
 	Title       string  `json:"title"`
 	Description *string `json:"description"`

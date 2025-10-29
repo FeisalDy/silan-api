@@ -41,8 +41,6 @@ func (s *GinServer) Start(addr string) error {
 
 func (s *GinServer) Shutdown() error {
 	log.Println("Shutting down Gin server...")
-	// Gin doesn't have built-in graceful shutdown in the simple API
-	// For graceful shutdown, you'd need to use http.Server directly
 	return nil
 }
 
@@ -81,11 +79,11 @@ func setupRoutes(router *gin.Engine, cfg *server.Config) {
 		novels := v1.Group("/novels")
 		novels.GET("", cfg.NovelHandler.GetAll)
 		novels.GET("/:id", cfg.NovelHandler.GetByID)
+		novels.GET("/:id/volumes", cfg.NovelHandler.GetNovelVolumes)
 		novels.Use(middleware.JWTAuth(cfg.JWTManager))
 		{
 			novels.POST("", middleware.RequirePermission("novel", "create", cfg.Enforcer, roleGetter), cfg.NovelHandler.Create)
 			novels.DELETE("/:id", middleware.RequirePermission("novel", "delete", cfg.Enforcer, roleGetter), cfg.NovelHandler.Delete)
-			// Upload or update cover media
 			novels.PATCH("/:id/cover", middleware.RequirePermission("novel", "update", cfg.Enforcer, roleGetter), cfg.NovelHandler.UpdateCoverMedia)
 
 			novels.POST("/translations", middleware.RequirePermission("novel_translation", "create", cfg.Enforcer, roleGetter), cfg.NovelHandler.CreateTranslation)
@@ -93,24 +91,24 @@ func setupRoutes(router *gin.Engine, cfg *server.Config) {
 		}
 
 		// Chapter routes
-		chapters := v1.Group("/chapters")
-		chapters.Use(middleware.JWTAuth(cfg.JWTManager))
-		{
-			// Public chapter endpoints (authenticated users can view)
-			chapters.GET("", cfg.ChapterHandler.GetByNovel)
-			chapters.GET("/search", cfg.ChapterHandler.GetByNovelAndNumber)
-			chapters.GET("/:id", cfg.ChapterHandler.GetByID)
-			chapters.GET("/:id/translations/:lang", cfg.ChapterHandler.GetTranslation)
+		// chapters := v1.Group("/chapters")
+		// chapters.Use(middleware.JWTAuth(cfg.JWTManager))
+		// {
+		// 	// Public chapter endpoints (authenticated users can view)
+		// 	chapters.GET("", cfg.ChapterHandler.GetByNovel)
+		// 	chapters.GET("/search", cfg.ChapterHandler.GetByNovelAndNumber)
+		// 	chapters.GET("/:id", cfg.ChapterHandler.GetByID)
+		// 	chapters.GET("/:id/translations/:lang", cfg.ChapterHandler.GetTranslation)
 
-			// Protected chapter endpoints (require authorization)
-			chapters.POST("", middleware.RequirePermission("chapter", "create", cfg.Enforcer, roleGetter), cfg.ChapterHandler.Create)
-			chapters.PUT("/:id", middleware.RequirePermission("chapter", "update", cfg.Enforcer, roleGetter), cfg.ChapterHandler.Update)
-			chapters.DELETE("/:id", middleware.RequirePermission("chapter", "delete", cfg.Enforcer, roleGetter), cfg.ChapterHandler.Delete)
+		// 	// Protected chapter endpoints (require authorization)
+		// 	chapters.POST("", middleware.RequirePermission("chapter", "create", cfg.Enforcer, roleGetter), cfg.ChapterHandler.Create)
+		// 	chapters.PUT("/:id", middleware.RequirePermission("chapter", "update", cfg.Enforcer, roleGetter), cfg.ChapterHandler.Update)
+		// 	chapters.DELETE("/:id", middleware.RequirePermission("chapter", "delete", cfg.Enforcer, roleGetter), cfg.ChapterHandler.Delete)
 
-			// Translation endpoints
-			chapters.POST("/translations", middleware.RequirePermission("chapter_translation", "create", cfg.Enforcer, roleGetter), cfg.ChapterHandler.CreateTranslation)
-			chapters.PUT("/translations/:translation_id", middleware.RequirePermission("chapter_translation", "update", cfg.Enforcer, roleGetter), cfg.ChapterHandler.UpdateTranslation)
-			chapters.DELETE("/translations/:translation_id", middleware.RequirePermission("chapter_translation", "delete", cfg.Enforcer, roleGetter), cfg.ChapterHandler.DeleteTranslation)
-		}
+		// 	// Translation endpoints
+		// 	chapters.POST("/translations", middleware.RequirePermission("chapter_translation", "create", cfg.Enforcer, roleGetter), cfg.ChapterHandler.CreateTranslation)
+		// 	chapters.PUT("/translations/:translation_id", middleware.RequirePermission("chapter_translation", "update", cfg.Enforcer, roleGetter), cfg.ChapterHandler.UpdateTranslation)
+		// 	chapters.DELETE("/translations/:translation_id", middleware.RequirePermission("chapter_translation", "delete", cfg.Enforcer, roleGetter), cfg.ChapterHandler.DeleteTranslation)
+		// }
 	}
 }

@@ -23,43 +23,25 @@ func (r *novelRepository) Create(ctx context.Context, n *novel.Novel) error {
 
 func (r *novelRepository) GetByID(ctx context.Context, id string) (*novel.Novel, error) {
 	var n novel.Novel
-
 	err := r.db.WithContext(ctx).
-		Where("id = ?", id).
-		First(&n).Error
-
+		Preload("Media").
+		Preload("Translations").
+		First(&n, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
-
-	return &n, nil
-}
-
-func (r *novelRepository) GetByIDWithTranslations(ctx context.Context, id, lang string) (*novel.Novel, error) {
-	var n novel.Novel
-
-	err := r.db.WithContext(ctx).Preload("Media").
-		Where("id = ?", id).
-		Preload("Translations", func(db *gorm.DB) *gorm.DB {
-			if lang != "" {
-				db = db.Where("lang = ?", lang)
-			}
-			return db
-		}).
-		First(&n).Error
-
-	if err != nil {
-		return nil, err
-	}
-
 	return &n, nil
 }
 
 func (r *novelRepository) GetAll(ctx context.Context, limit, offset int, title, lang string) ([]novel.Novel, error) {
 	var novels []novel.Novel
 
-	query := r.db.WithContext(ctx).Model(&novel.Novel{}).Order("novels.updated_at DESC")
+	query := r.db.WithContext(ctx).Model(&novel.Novel{}).
+		Order("novels.updated_at DESC").
+		Preload("Media").
+		Preload("Translations")
 
+	// Join on translations if we’re filtering
 	if title != "" || lang != "" {
 		query = query.Joins("JOIN novel_translations t ON t.novel_id = novels.id")
 		if lang != "" {
@@ -76,18 +58,6 @@ func (r *novelRepository) GetAll(ctx context.Context, limit, offset int, title, 
 	if offset > 0 {
 		query = query.Offset(offset)
 	}
-
-	query = query.Preload("Translations", func(db *gorm.DB) *gorm.DB {
-		if lang != "" {
-			db = db.Where("lang = ?", lang)
-		}
-		if title != "" {
-			db = db.Where("title ILIKE ?", "%"+title+"%")
-		}
-		return db
-	})
-
-	query = query.Preload("Media")
 
 	err := query.Find(&novels).Error
 	return novels, err

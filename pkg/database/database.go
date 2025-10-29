@@ -9,6 +9,7 @@ import (
 	"simple-go/internal/domain/role"
 	"simple-go/internal/domain/tag"
 	"simple-go/internal/domain/user"
+	"simple-go/internal/domain/volume"
 
 	"simple-go/pkg/config"
 
@@ -63,6 +64,8 @@ func migrateDatabase(db *gorm.DB) error {
 		&tag.NovelTag{},
 		&novel.Novel{},
 		&novel.NovelTranslation{},
+		&volume.Volume{},
+		&volume.VolumeTranslation{},
 		&chapter.Chapter{},
 		&chapter.ChapterTranslation{},
 	)

@@ -60,7 +60,7 @@ func (h *NovelHandler) GetByID(c *gin.Context) {
 	id := c.Param("id")
 	lang := c.DefaultQuery("lang", "")
 
-	result, err := h.novelService.GetByIDWithTranslations(c.Request.Context(), id, lang)
+	result, err := h.novelService.GetByID(c.Request.Context(), id, lang)
 	if err != nil {
 		response.Error(c, http.StatusNotFound, fmt.Sprintf("Novel not found: %v", err))
 		return
@@ -191,4 +191,17 @@ func (h *NovelHandler) DeleteTranslation(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusOK, "Translation deleted successfully", nil)
+}
+
+func (h *NovelHandler) GetNovelVolumes(c *gin.Context) {
+	id := c.Param("id")
+	lang := c.DefaultQuery("lang", "")
+
+	volumes, err := h.novelService.GetNovelVolumes(c.Request.Context(), id, lang)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, fmt.Sprintf("Failed to retrieve novel volumes: %v", err))
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Novel volumes retrieved successfully", volumes)
 }

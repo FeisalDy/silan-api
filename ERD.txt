@@ -40,9 +40,28 @@ novel_translation [icon: globe, color: lightblue]{
   updated_at timestamp
 }
 
-chapter [icon: file-text, color: blue]{
+volume [icon:book, color:lightwhite]{
   id string pk
   novel_id string fk
+  cover_media_id string fk nullable
+  created_at timestamp
+  updated_at timestamp
+}
+
+volume_translation [icon:globe, color:lightblue]{
+  id string pk
+  volume_id string fk
+  number int unique
+  name string
+  description string nullable
+  created_at timestamp
+  updated_at timestamp
+  translator_id string fk
+}
+
+chapter [icon: file-text, color: blue]{
+  id string pk
+  volume_id string fk
   number int
   created_at timestamp
   updated_at timestamp
@@ -306,9 +325,14 @@ novel.created_by > user.id
 novel.cover_media_id > media.id
 novel_translation.novel_id > novel.id
 novel_translation.translator_id > user.id
-chapter.novel_id > novel.id
+volume.novel_id > novel.id
+volume.cover_media_id > media.id
+volume_translation.volume_id > volume.id
+volume_translation.translator_id > user.id
+chapter.volume_id > volume.id
 chapter_translation.chapter_id > chapter.id
 chapter_translation.translator_id > user.id
+
 
 // Categorization
 novel_genre.novel_id > novel.id

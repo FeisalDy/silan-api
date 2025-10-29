@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 	"simple-go/internal/domain/chapter"
-	"simple-go/internal/domain/novel"
 	"simple-go/internal/domain/user"
+	"simple-go/internal/domain/volume"
 
 	"gorm.io/gorm"
 )
@@ -25,28 +25,28 @@ func SeedChapters(db *gorm.DB) error {
 	}
 
 	// Get all novels
-	var novels []novel.Novel
-	if err := db.Find(&novels).Error; err != nil {
-		log.Println("⚠️  No novels found, skipping chapter seeding")
+	var volumes []volume.Volume
+	if err := db.Find(&volumes).Error; err != nil {
+		log.Println("⚠️  No volumes found, skipping chapter seeding")
 		return nil
 	}
 
-	// Seed 5 chapters for each novel
-	for _, n := range novels {
+	// Seed 5 chapters for each volume
+	for _, v := range volumes {
 		for chapterNum := 1; chapterNum <= 5; chapterNum++ {
 			// Check if chapter exists
 			var existingChapter chapter.Chapter
-			result := db.Where("novel_id = ? AND number = ?", n.ID, chapterNum).First(&existingChapter)
+			result := db.Where("volume_id = ? AND number = ?", v.ID, chapterNum).First(&existingChapter)
 
 			if result.Error == gorm.ErrRecordNotFound {
 				ch := chapter.Chapter{
-					NovelID:   n.ID,
+					VolumeID:  v.ID,
 					Number:    chapterNum,
 					WordCount: intPtr(2500 + (chapterNum * 100)),
 				}
 
 				if err := db.Create(&ch).Error; err != nil {
-					log.Printf("⚠️  Failed to seed chapter %d for novel %s: %v", chapterNum, n.ID, err)
+					log.Printf("⚠️  Failed to seed chapter %d for volume %s: %v", chapterNum, v.ID, err)
 					continue
 				}
 
@@ -74,11 +74,11 @@ func SeedChapters(db *gorm.DB) error {
 					}
 				}
 
-				log.Printf("✅ Created chapter %d for novel ID %s", chapterNum, n.ID)
+				log.Printf("✅ Created chapter %d for volume ID %s", chapterNum, v.ID)
 			} else if result.Error != nil {
 				return result.Error
 			} else {
-				log.Printf("⏭️  Chapter %d for novel %s already exists", chapterNum, n.ID)
+				log.Printf("⏭️  Chapter %d for volume %s already exists", chapterNum, v.ID)
 			}
 		}
 	}

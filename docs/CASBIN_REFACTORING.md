@@ -80,7 +80,7 @@ The middleware now uses context-based resource/action metadata:
 
 ```go
 // Set resource and action in context
-middleware.SetResourceAction(c, "novel", "create")
+middleware.SetReSource404NovelDownloaderction(c, "novel", "create")
 
 // Or use the convenience function
 middleware.RequirePermission("novel", "create", enforcer, roleGetter)

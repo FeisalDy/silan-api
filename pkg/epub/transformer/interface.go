@@ -9,9 +9,9 @@ import (
 type EpubSourceType string
 
 const (
-	EpubSourceA       EpubSourceType = "source_a"
-	EpubSourceB       EpubSourceType = "source_b"
-	EpubSourceGeneric EpubSourceType = "generic"
+	EpubSource404NovelDownloader      EpubSourceType = "source_a"
+	EpubSourceDipubdLightnovelCrawler EpubSourceType = "source_b"
+	EpubSourceGeneric                 EpubSourceType = "generic"
 )
 
 // EpubTransformer defines the interface for transforming EPUB content to database models

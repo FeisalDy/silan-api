@@ -8,29 +8,37 @@ import (
 	"strings"
 )
 
-// SourceATransformer handles EPUB from Source A (with synopsis.xhtml, no cover)
-type SourceATransformer struct{}
+type Source404NovelDownloaderTransformer struct{}
 
-func NewSourceATransformer() *SourceATransformer {
-	return &SourceATransformer{}
+func NewSource404NovelDownloaderTransformer() *Source404NovelDownloaderTransformer {
+	return &Source404NovelDownloaderTransformer{}
 }
 
-func (t *SourceATransformer) DetectSource(content *epub.EpubContent) bool {
-	// Source A has synopsis.xhtml file
-	for path := range content.RawFiles {
-		if strings.Contains(strings.ToLower(path), "synopsis.xhtml") {
-			logger.Info("Detected Source A format (has synopsis.xhtml)")
-			return true
+func (t *Source404NovelDownloaderTransformer) DetectSource(content *epub.EpubContent) bool {
+	const targetFile = "oebps/info.txt"
+	const markerText = "https://github.com/404-novel-project/novel-downloader"
+
+	// Normalize file names to lowercase for consistent matching
+	for path, data := range content.RawFiles {
+		if strings.ToLower(path) == targetFile {
+			text := string(data)
+			if strings.Contains(text, markerText) {
+				logger.Info("Detected Source A format (info.txt contains novel-downloader marker)")
+				return true
+			}
+			logger.Info("Found info.txt but no marker text inside")
+			return false
 		}
 	}
+
 	return false
 }
 
-func (t *SourceATransformer) GetSourceType() EpubSourceType {
-	return EpubSourceA
+func (t *Source404NovelDownloaderTransformer) GetSourceType() EpubSourceType {
+	return EpubSource404NovelDownloader
 }
 
-func (t *SourceATransformer) TransformToNovelData(ctx context.Context, content *epub.EpubContent) (*NovelData, error) {
+func (t *Source404NovelDownloaderTransformer) TransformToNovelData(ctx context.Context, content *epub.EpubContent) (*NovelData, error) {
 	data := &NovelData{
 		Tags: []string{},
 	}
@@ -70,7 +78,7 @@ func (t *SourceATransformer) TransformToNovelData(ctx context.Context, content *
 	return data, nil
 }
 
-func (t *SourceATransformer) TransformToChapters(ctx context.Context, content *epub.EpubContent) ([]ChapterData, error) {
+func (t *Source404NovelDownloaderTransformer) TransformToChapters(ctx context.Context, content *epub.EpubContent) ([]ChapterData, error) {
 	chapters := []ChapterData{}
 	baseDir := getBaseDir(content.OPFPath)
 

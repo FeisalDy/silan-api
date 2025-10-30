@@ -8,42 +8,31 @@ import (
 	"strings"
 )
 
-// SourceBTransformer handles EPUB from Source B (with cover.jpg, no synopsis)
-type SourceBTransformer struct{}
+type SourceDipubdLightnovelCrawlerTransformer struct{}
 
-func NewSourceBTransformer() *SourceBTransformer {
-	return &SourceBTransformer{}
+func NewSourceDipubdLightnovelCrawlerTransformer() *SourceDipubdLightnovelCrawlerTransformer {
+	return &SourceDipubdLightnovelCrawlerTransformer{}
 }
 
-func (t *SourceBTransformer) DetectSource(content *epub.EpubContent) bool {
-	// Source B has cover.jpg or cover image in manifest
-	for path := range content.RawFiles {
-		lowerPath := strings.ToLower(path)
-		if strings.Contains(lowerPath, "cover.jpg") ||
-			strings.Contains(lowerPath, "cover.jpeg") ||
-			strings.Contains(lowerPath, "cover.png") {
-			logger.Info("Detected Source B format (has cover image)")
-			return true
-		}
-	}
-
-	// Also check manifest for cover
-	for _, item := range content.Manifest {
-		if strings.Contains(strings.ToLower(item.ID), "cover") &&
-			strings.Contains(item.MediaType, "image") {
-			logger.Info("Detected Source B format (cover in manifest)")
-			return true
+func (t *SourceDipubdLightnovelCrawlerTransformer) DetectSource(content *epub.EpubContent) bool {
+	for path, file := range content.RawFiles {
+		if strings.EqualFold(path, "EPUB/intro.xhtml") {
+			data := string(file)
+			if strings.Contains(data, "https://github.com/dipu-bd/lightnovel-crawler") {
+				logger.Info("Detected Source B format (Lightnovel Crawler)")
+				return true
+			}
 		}
 	}
 
 	return false
 }
 
-func (t *SourceBTransformer) GetSourceType() EpubSourceType {
-	return EpubSourceB
+func (t *SourceDipubdLightnovelCrawlerTransformer) GetSourceType() EpubSourceType {
+	return EpubSourceDipubdLightnovelCrawler
 }
 
-func (t *SourceBTransformer) TransformToNovelData(ctx context.Context, content *epub.EpubContent) (*NovelData, error) {
+func (t *SourceDipubdLightnovelCrawlerTransformer) TransformToNovelData(ctx context.Context, content *epub.EpubContent) (*NovelData, error) {
 	data := &NovelData{
 		Tags: []string{},
 	}
@@ -103,7 +92,7 @@ func (t *SourceBTransformer) TransformToNovelData(ctx context.Context, content *
 	return data, nil
 }
 
-func (t *SourceBTransformer) TransformToChapters(ctx context.Context, content *epub.EpubContent) ([]ChapterData, error) {
+func (t *SourceDipubdLightnovelCrawlerTransformer) TransformToChapters(ctx context.Context, content *epub.EpubContent) ([]ChapterData, error) {
 	chapters := []ChapterData{}
 	baseDir := getBaseDir(content.OPFPath)
 

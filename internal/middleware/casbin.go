@@ -16,15 +16,15 @@ const (
 	ActionKey   = "casbin_action"
 )
 
-// SetResourceAction sets the resource and action in the context for Casbin authorization
+// SetReSource404NovelDownloaderction sets the resource and action in the context for Casbin authorization
 // This should be called in handlers before the Casbin middleware runs
-func SetResourceAction(c *gin.Context, resource, action string) {
+func SetReSource404NovelDownloaderction(c *gin.Context, resource, action string) {
 	c.Set(ResourceKey, resource)
 	c.Set(ActionKey, action)
 }
 
-// GetResourceAction retrieves the resource and action from the context
-func GetResourceAction(c *gin.Context) (resource, action string, exists bool) {
+// GetReSource404NovelDownloaderction retrieves the resource and action from the context
+func GetReSource404NovelDownloaderction(c *gin.Context) (resource, action string, exists bool) {
 	resourceVal, resourceExists := c.Get(ResourceKey)
 	actionVal, actionExists := c.Get(ActionKey)
 
@@ -60,7 +60,7 @@ func CasbinAuthorizer(enforcer *casbin.Enforcer, roleGetter func(*gin.Context) (
 		}
 
 		// Get resource and action from context
-		resource, action, exists := GetResourceAction(c)
+		resource, action, exists := GetReSource404NovelDownloaderction(c)
 		if !exists {
 			logger.Error(nil, "resource and action not set in context")
 			response.Error(c, http.StatusInternalServerError, "Authorization configuration error")
@@ -97,7 +97,7 @@ func CasbinAuthorizer(enforcer *casbin.Enforcer, roleGetter func(*gin.Context) (
 // RequirePermission is a convenience middleware that sets the resource and action, then checks authorization
 func RequirePermission(resource, action string, enforcer *casbin.Enforcer, roleGetter func(*gin.Context) ([]string, error)) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		SetResourceAction(c, resource, action)
+		SetReSource404NovelDownloaderction(c, resource, action)
 		CasbinAuthorizer(enforcer, roleGetter)(c)
 	}
 }

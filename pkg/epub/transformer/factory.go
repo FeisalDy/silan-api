@@ -14,8 +14,8 @@ type EpubTransformerFactory struct {
 func NewEpubTransformerFactory() *EpubTransformerFactory {
 	return &EpubTransformerFactory{
 		transformers: []EpubTransformer{
-			NewSourceATransformer(),
-			NewSourceBTransformer(),
+			NewSource404NovelDownloaderTransformer(),
+			NewSourceDipubdLightnovelCrawlerTransformer(),
 			NewGenericTransformer(), // Generic should be last (fallback)
 		},
 	}

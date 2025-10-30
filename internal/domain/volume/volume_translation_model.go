@@ -8,14 +8,13 @@ import (
 )
 
 type VolumeTranslation struct {
-	ID           string    `gorm:"type:uuid;primaryKey"`
-	VolumeID     string    `gorm:"type:uuid;not null;index:idx_volume_lang,unique"`
-	Lang         string    `gorm:"type:varchar(10);not null;index:idx_volume_lang,unique"`
-	Title        string    `gorm:"type:varchar(500);not null"`
-	Description  *string   `gorm:"type:text"`
-	CreatedAt    time.Time `gorm:"autoCreateTime"`
-	UpdatedAt    time.Time `gorm:"autoUpdateTime"`
-	TranslatorID string    `gorm:"type:uuid;not null;index"`
+	ID          string    `gorm:"type:uuid;primaryKey"`
+	VolumeID    string    `gorm:"type:uuid;not null;index:idx_volume_lang,unique"`
+	Lang        string    `gorm:"type:varchar(10);not null;index:idx_volume_lang,unique"`
+	Title       string    `gorm:"type:varchar(500);not null"`
+	Description *string   `gorm:"type:text"`
+	CreatedAt   time.Time `gorm:"autoCreateTime"`
+	UpdatedAt   time.Time `gorm:"autoUpdateTime"`
 }
 
 func (vt *VolumeTranslation) BeforeCreate(tx *gorm.DB) error {

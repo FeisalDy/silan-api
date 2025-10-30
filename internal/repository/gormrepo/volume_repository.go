@@ -66,16 +66,10 @@ func (r *volumeRepository) GetAllWithChaptersByNovelIDAndLang(ctx context.Contex
 	var volumes []volume.Volume
 	q := r.db.WithContext(ctx).
 		Preload("Chapters").
+		Preload("Translations", "lang = ?", lang).
+		Preload("Chapters.Translations", "lang = ?", lang).
 		Where("novel_id = ?", novelID).
 		Order("number ASC")
-
-	if lang != "" {
-		q = q.Preload("Translations", "lang = ?", lang)
-		q = q.Preload("Chapters.Translations", "lang = ?", lang)
-	} else {
-		q = q.Preload("Translations")
-		q = q.Preload("Chapters.Translations")
-	}
 
 	if err := q.Find(&volumes).Error; err != nil {
 		return nil, err

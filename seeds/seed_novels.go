@@ -125,27 +125,36 @@ func SeedNovels(db *gorm.DB) error {
 			// Create translations
 			for _, trans := range novelData.Translations {
 				trans.NovelID = novelData.Novel.ID
-				trans.TranslatorID = translator.ID
 				if err := db.Create(&trans).Error; err != nil {
 					log.Printf("⚠️  Failed to seed translation for novel %d: %v", i+1, err)
 				}
 			}
 
-			// Add genres
+			// Add genres using GORM Association API (Novel owns the M2M relationship)
+			var genres []genre.Genre
 			for _, genreSlug := range novelData.GenreSlugs {
 				var g genre.Genre
 				if err := db.Where("slug = ?", genreSlug).First(&g).Error; err == nil {
-					novelGenre := genre.NovelGenre{NovelID: novelData.Novel.ID, GenreID: g.ID}
-					db.Create(&novelGenre)
+					genres = append(genres, g)
+				}
+			}
+			if len(genres) > 0 {
+				if err := db.Model(&novelData.Novel).Association("Genres").Append(genres); err != nil {
+					log.Printf("⚠️  Failed to assign genres to novel %d: %v", i+1, err)
 				}
 			}
 
-			// Add tags
+			// Add tags using GORM Association API (Novel owns the M2M relationship)
+			var tags []tag.Tag
 			for _, tagSlug := range novelData.TagSlugs {
 				var t tag.Tag
 				if err := db.Where("slug = ?", tagSlug).First(&t).Error; err == nil {
-					novelTag := tag.NovelTag{NovelID: novelData.Novel.ID, TagID: t.ID}
-					db.Create(&novelTag)
+					tags = append(tags, t)
+				}
+			}
+			if len(tags) > 0 {
+				if err := db.Model(&novelData.Novel).Association("Tags").Append(tags); err != nil {
+					log.Printf("⚠️  Failed to assign tags to novel %d: %v", i+1, err)
 				}
 			}
 

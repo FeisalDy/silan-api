@@ -15,7 +15,7 @@ type Chapter struct {
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime"`
 
-	Translations []ChapterTranslation `gorm:"foreignKey:ChapterID;constraint:OnDelete:CASCADE"`
+	Translations []ChapterTranslation `gorm:"foreignKey:ChapterID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
 func (c *Chapter) BeforeCreate(tx *gorm.DB) error {

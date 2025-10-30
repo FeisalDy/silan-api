@@ -17,8 +17,8 @@ type Volume struct {
 	NovelID          string       `gorm:"type:uuid;not null;index"`
 	IsVirtual        bool         `gorm:"type:boolean;not null"`
 
-	Translations []VolumeTranslation `gorm:"foreignKey:VolumeID;constraint:OnDelete:CASCADE;"`
-	Chapters     []chapter.Chapter   `gorm:"foreignKey:VolumeID;constraint:OnDelete:CASCADE;"`
+	Translations []VolumeTranslation `gorm:"foreignKey:VolumeID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Chapters     []chapter.Chapter   `gorm:"foreignKey:VolumeID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
 
 func (v *Volume) BeforeCreate(tx *gorm.DB) error {

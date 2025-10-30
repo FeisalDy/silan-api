@@ -53,18 +53,16 @@ func SeedChapters(db *gorm.DB) error {
 				// Create translations for this chapter
 				translations := []chapter.ChapterTranslation{
 					{
-						ChapterID:    ch.ID,
-						Lang:         "en",
-						Title:        fmt.Sprintf("Chapter %d: The Beginning of the Journey", chapterNum),
-						Content:      generateChapterContent("en", chapterNum),
-						TranslatorID: translator.ID,
+						ChapterID: ch.ID,
+						Lang:      "en",
+						Title:     fmt.Sprintf("Chapter %d: The Beginning of the Journey", chapterNum),
+						Content:   generateChapterContent("en", chapterNum),
 					},
 					{
-						ChapterID:    ch.ID,
-						Lang:         "id",
-						Title:        fmt.Sprintf("Bab %d: Permulaan Perjalanan", chapterNum),
-						Content:      generateChapterContent("id", chapterNum),
-						TranslatorID: translator.ID,
+						ChapterID: ch.ID,
+						Lang:      "id",
+						Title:     fmt.Sprintf("Bab %d: Permulaan Perjalanan", chapterNum),
+						Content:   generateChapterContent("id", chapterNum),
 					},
 				}
 

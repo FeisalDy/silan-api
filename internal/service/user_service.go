@@ -106,7 +106,7 @@ func (s *UserService) Delete(ctx context.Context, id string) error {
 
 // GetUserRoles retrieves all roles assigned to a user
 func (s *UserService) GetUserRoles(ctx context.Context, userID string) ([]string, error) {
-	roles, err := s.roleRepo.GetUserRoles(ctx, userID)
+	roles, err := s.userRepo.GetRoles(ctx, userID)
 	if err != nil {
 		logger.Error(err, "failed to get user roles")
 		return nil, errors.New("unable to retrieve user roles")

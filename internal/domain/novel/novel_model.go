@@ -3,7 +3,10 @@ package novel
 import (
 	"time"
 
+	"simple-go/internal/domain/genre"
 	"simple-go/internal/domain/media"
+	"simple-go/internal/domain/tag"
+	"simple-go/internal/domain/volume"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -23,6 +26,10 @@ type Novel struct {
 	Media            *media.Media `gorm:"foreignKey:CoverMediaID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 
 	Translations []NovelTranslation `gorm:"foreignKey:NovelID;constraint:OnDelete:CASCADE;"`
+	Volumes      []volume.Volume    `gorm:"foreignKey:NovelID;constraint:OnDelete:CASCADE;"`
+
+	Tags   []tag.Tag     `gorm:"many2many:novel_tags;joinForeignKey:NovelID;joinReferences:TagID"`
+	Genres []genre.Genre `gorm:"many2many:novel_genres;joinForeignKey:NovelID;joinReferences:GenreID"`
 }
 
 func (n *Novel) BeforeCreate(tx *gorm.DB) error {

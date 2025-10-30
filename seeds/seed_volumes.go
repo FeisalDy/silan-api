@@ -52,18 +52,16 @@ func SeedVolumes(db *gorm.DB) error {
 
 				translations := []volume.VolumeTranslation{
 					{
-						VolumeID:     v.ID,
-						Lang:         "en",
-						Title:        "Virtual Volume: Adventures Ahead",
-						Description:  nil,
-						TranslatorID: translator.ID,
+						VolumeID:    v.ID,
+						Lang:        "en",
+						Title:       "Virtual Volume: Adventures Ahead",
+						Description: nil,
 					},
 					{
-						VolumeID:     v.ID,
-						Lang:         "id",
-						Title:        "Volume Virtual: Petualangan di Depan",
-						Description:  nil,
-						TranslatorID: translator.ID,
+						VolumeID:    v.ID,
+						Lang:        "id",
+						Title:       "Volume Virtual: Petualangan di Depan",
+						Description: nil,
 					},
 				}
 
@@ -100,18 +98,16 @@ func SeedVolumes(db *gorm.DB) error {
 
 					translations := []volume.VolumeTranslation{
 						{
-							VolumeID:     v.ID,
-							Lang:         "en",
-							Title:        "Volume " + strconv.Itoa(int(volumeNum)) + ": Adventures Ahead",
-							Description:  nil,
-							TranslatorID: translator.ID,
+							VolumeID:    v.ID,
+							Lang:        "en",
+							Title:       "Volume " + strconv.Itoa(int(volumeNum)) + ": Adventures Ahead",
+							Description: nil,
 						},
 						{
-							VolumeID:     v.ID,
-							Lang:         "id",
-							Title:        "Volume " + strconv.Itoa(int(volumeNum)) + ": Petualangan di Depan",
-							Description:  nil,
-							TranslatorID: translator.ID,
+							VolumeID:    v.ID,
+							Lang:        "id",
+							Title:       "Volume " + strconv.Itoa(int(volumeNum)) + ": Petualangan di Depan",
+							Description: nil,
 						},
 					}
 

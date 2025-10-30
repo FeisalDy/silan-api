@@ -8,14 +8,13 @@ import (
 )
 
 type ChapterTranslation struct {
-	ID           string    `gorm:"type:uuid;primaryKey" json:"id"`
-	ChapterID    string    `gorm:"type:uuid;not null;index" json:"chapter_id"`
-	Lang         string    `gorm:"type:varchar(10);not null;index" json:"lang"`
-	Title        string    `gorm:"type:varchar(500);not null" json:"title"`
-	Content      string    `gorm:"type:text;not null" json:"content"`
-	TranslatorID string    `gorm:"type:uuid;not null;index" json:"translator_id"`
-	CreatedAt    time.Time `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt    time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+	ID        string    `gorm:"type:uuid;primaryKey"`
+	ChapterID string    `gorm:"type:uuid;not null;index"`
+	Lang      string    `gorm:"type:varchar(10);not null;index"`
+	Title     string    `gorm:"type:varchar(500);not null"`
+	Content   string    `gorm:"type:text;not null"`
+	CreatedAt time.Time `gorm:"autoCreateTime"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime"`
 }
 
 func (ct *ChapterTranslation) BeforeCreate(tx *gorm.DB) error {

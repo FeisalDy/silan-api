@@ -6,9 +6,12 @@ import (
 	"simple-go/internal/domain/chapter"
 	"simple-go/internal/domain/genre"
 	"simple-go/internal/domain/novel"
+	novelgenre "simple-go/internal/domain/novel_genre"
+	noveltag "simple-go/internal/domain/novel_tag"
 	"simple-go/internal/domain/role"
 	"simple-go/internal/domain/tag"
 	"simple-go/internal/domain/user"
+	userrole "simple-go/internal/domain/user_role"
 	"simple-go/internal/domain/volume"
 
 	"simple-go/pkg/config"
@@ -57,11 +60,11 @@ func migrateDatabase(db *gorm.DB) error {
 	err := db.AutoMigrate(
 		&user.User{},
 		&role.Role{},
-		&role.UserRole{},
+		&userrole.UserRole{}, // Custom join table with CASCADE delete
 		&genre.Genre{},
-		&genre.NovelGenre{},
+		&novelgenre.NovelGenre{},
 		&tag.Tag{},
-		&tag.NovelTag{},
+		&noveltag.NovelTag{},
 		&novel.Novel{},
 		&novel.NovelTranslation{},
 		&volume.Volume{},

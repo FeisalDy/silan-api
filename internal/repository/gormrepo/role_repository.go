@@ -2,7 +2,6 @@ package gormrepo
 
 import (
 	"context"
-	"fmt"
 	"simple-go/internal/domain/role"
 	"simple-go/internal/repository"
 
@@ -45,41 +44,12 @@ func (r *roleRepository) GetAll(ctx context.Context) ([]role.Role, error) {
 	return roles, err
 }
 
-func (r *roleRepository) AssignRoleToUser(ctx context.Context, userID, roleID string) error {
-	userRole := &role.UserRole{
-		UserID: userID,
-		RoleID: roleID,
-	}
-	return r.db.WithContext(ctx).Create(userRole).Error
-}
-
-func (r *roleRepository) RemoveRoleFromUser(ctx context.Context, userID, roleID string) error {
-	result := r.db.WithContext(ctx).
-		Where("user_id = ? AND role_id = ?", userID, roleID).
-		Delete(&role.UserRole{})
-
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return fmt.Errorf("user role not found")
-	}
-	return nil
-}
-
-func (r *roleRepository) GetUserRoles(ctx context.Context, userID string) ([]role.Role, error) {
-	var roles []role.Role
-	err := r.db.WithContext(ctx).
-		Joins("JOIN user_roles ON user_roles.role_id = roles.id").
-		Where("user_roles.user_id = ?", userID).
-		Find(&roles).Error
-	return roles, err
-}
-
+// GetRoleUsers retrieves all user IDs that have this role
+// Note: Uses raw table query to avoid importing user domain
 func (r *roleRepository) GetRoleUsers(ctx context.Context, roleID string) ([]string, error) {
 	var userIDs []string
 	err := r.db.WithContext(ctx).
-		Model(&role.UserRole{}).
+		Table("user_roles").
 		Where("role_id = ?", roleID).
 		Pluck("user_id", &userIDs).Error
 	return userIDs, err

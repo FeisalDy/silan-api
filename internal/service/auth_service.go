@@ -100,7 +100,7 @@ func (s *AuthService) Register(ctx context.Context, req RegisterRequest) (*AuthR
 			return errors.New("unable to setup user account")
 		}
 
-		if err := provider.Role().AssignRoleToUser(ctx, newUser.ID, userRole.ID); err != nil {
+		if err := provider.User().AssignRole(ctx, newUser.ID, userRole.ID); err != nil {
 			logger.Error(err, "failed to assign role to user")
 			return errors.New("unable to setup user account")
 		}

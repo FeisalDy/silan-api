@@ -81,18 +81,15 @@ func SeedUsers(db *gorm.DB) error {
 				return err
 			}
 
-			// Assign role
+			// Assign role using GORM association (User owns the relationship)
 			var r role.Role
 			if err := db.Where("name = ?", userData.RoleName).First(&r).Error; err != nil {
 				log.Printf("⚠️  Role %s not found for user %s", userData.RoleName, userData.User.Email)
 				continue
 			}
 
-			userRole := role.UserRole{
-				UserID: userData.User.ID,
-				RoleID: r.ID,
-			}
-			if err := db.Create(&userRole).Error; err != nil {
+			// Use Association on User model since User owns the M2M relationship
+			if err := db.Model(&userData.User).Association("Roles").Append(&r); err != nil {
 				log.Printf("⚠️  Failed to assign role to user %s: %v", userData.User.Email, err)
 			}
 

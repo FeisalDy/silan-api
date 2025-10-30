@@ -160,7 +160,7 @@ func (h *NovelHandler) UpdateCoverMedia(c *gin.Context) {
 }
 
 func (h *NovelHandler) CreateTranslation(c *gin.Context) {
-	userID, exists := middleware.GetUserID(c)
+	_, exists := middleware.GetUserID(c)
 	if !exists {
 		response.Error(c, http.StatusUnauthorized, "Unauthorized")
 		return
@@ -172,7 +172,7 @@ func (h *NovelHandler) CreateTranslation(c *gin.Context) {
 		return
 	}
 
-	result, err := h.novelService.CreateTranslation(c.Request.Context(), userID, dto)
+	result, err := h.novelService.CreateTranslation(c.Request.Context(), dto)
 	if err != nil {
 		response.Error(c, http.StatusBadRequest, fmt.Sprintf("Failed to create translation: %v", err))
 		return

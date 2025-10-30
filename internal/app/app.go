@@ -14,16 +14,16 @@ import (
 )
 
 type App struct {
-	Config       *config.Config
-	DB           *gorm.DB
-	AuthHandler  *handler.AuthHandler
-	UserHandler  *handler.UserHandler
-	NovelHandler *handler.NovelHandler
-	// ChapterHandler *handler.ChapterHandler
-	UserService  *service.UserService
-	MediaService *service.MediaService
-	JWTManager   *auth.JWTManager
-	Enforcer     *casbin.Enforcer
+	Config         *config.Config
+	DB             *gorm.DB
+	AuthHandler    *handler.AuthHandler
+	UserHandler    *handler.UserHandler
+	NovelHandler   *handler.NovelHandler
+	ChapterHandler *handler.ChapterHandler
+	UserService    *service.UserService
+	MediaService   *service.MediaService
+	JWTManager     *auth.JWTManager
+	Enforcer       *casbin.Enforcer
 }
 
 func Initialize() (*App, error) {
@@ -41,7 +41,7 @@ func Initialize() (*App, error) {
 	roleRepo := gormrepo.NewRoleRepository(db)
 	novelRepo := gormrepo.NewNovelRepository(db)
 	volumeRepo := gormrepo.NewVolumeRepository(db)
-	// chapterRepo := gormrepo.NewChapterRepository(db)
+	chapterRepo := gormrepo.NewChapterRepository(db)
 	mediaRepo := gormrepo.NewMediaRepository(db)
 	uow := gormrepo.NewUnitOfWork(db)
 
@@ -64,24 +64,24 @@ func Initialize() (*App, error) {
 	userService := service.NewUserService(userRepo, roleRepo)
 	volumeService := service.NewVolumeService(uow, volumeRepo, mediaService)
 	novelService := service.NewNovelService(uow, novelRepo, mediaService, volumeService)
-	// chapterService := service.NewChapterService(uow, chapterRepo, novelRepo)
+	chapterService := service.NewChapterService(uow, chapterRepo, novelRepo)
 
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(authService)
 	userHandler := handler.NewUserHandler(userService)
 	novelHandler := handler.NewNovelHandler(novelService)
-	// chapterHandler := handler.NewChapterHandler(chapterService)
+	chapterHandler := handler.NewChapterHandler(chapterService)
 
 	return &App{
-		Config:       cfg,
-		DB:           db,
-		AuthHandler:  authHandler,
-		UserHandler:  userHandler,
-		NovelHandler: novelHandler,
-		// ChapterHandler: chapterHandler,
-		UserService:  userService,
-		MediaService: mediaService,
-		JWTManager:   jwtManager,
-		Enforcer:     enforcer,
+		Config:         cfg,
+		DB:             db,
+		AuthHandler:    authHandler,
+		UserHandler:    userHandler,
+		NovelHandler:   novelHandler,
+		ChapterHandler: chapterHandler,
+		UserService:    userService,
+		MediaService:   mediaService,
+		JWTManager:     jwtManager,
+		Enforcer:       enforcer,
 	}, nil
 }

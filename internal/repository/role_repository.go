@@ -12,9 +12,7 @@ type RoleRepository interface {
 	GetByName(ctx context.Context, name string) (*role.Role, error)
 	GetAll(ctx context.Context) ([]role.Role, error)
 
-	// UserRole operations
-	AssignRoleToUser(ctx context.Context, userID, roleID string) error
-	RemoveRoleFromUser(ctx context.Context, userID, roleID string) error
-	GetUserRoles(ctx context.Context, userID string) ([]role.Role, error)
-	GetRoleUsers(ctx context.Context, roleID string) ([]string, error) // Returns user IDs
+	// GetRoleUsers returns user IDs that have this role
+	// Note: For assigning roles to users, use UserRepository.AssignRole()
+	GetRoleUsers(ctx context.Context, roleID string) ([]string, error)
 }

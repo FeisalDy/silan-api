@@ -37,7 +37,7 @@ func (s *NovelService) CreateNovelWithTranslation(
 	var newTranslation *novel.NovelTranslation
 
 	err := s.uow.Do(ctx, func(provider repository.RepositoryProvider) error {
-		newNovel = &novel.Novel{
+		novelToCreate := &novel.Novel{
 			CreatedBy:        creatorID,
 			OriginalLanguage: dto.OriginalLanguage,
 			OriginalAuthor:   dto.OriginalAuthor,
@@ -45,23 +45,26 @@ func (s *NovelService) CreateNovelWithTranslation(
 			Status:           dto.Status,
 		}
 
-		if err := provider.Novel().Create(ctx, newNovel); err != nil {
+		createdNovel, err := provider.Novel().Create(ctx, novelToCreate)
+		if err != nil {
 			logger.Error(err, "failed to create novel in database")
 			return errors.New("unable to create novel")
 		}
+		newNovel = createdNovel
 
-		newTranslation = &novel.NovelTranslation{
-			NovelID:      newNovel.ID,
-			Lang:         dto.OriginalLanguage,
-			Title:        dto.Title,
-			Description:  dto.Description,
-			TranslatorID: creatorID,
+		translationToCreate := &novel.NovelTranslation{
+			NovelID:     newNovel.ID,
+			Lang:        dto.OriginalLanguage,
+			Title:       dto.Title,
+			Description: dto.Description,
 		}
 
-		if err := provider.Novel().CreateTranslation(ctx, newTranslation); err != nil {
+		createdTranslation, err := provider.Novel().CreateTranslation(ctx, translationToCreate)
+		if err != nil {
 			logger.Error(err, "failed to create novel translation")
 			return errors.New("unable to create novel translation")
 		}
+		newTranslation = createdTranslation
 
 		return nil
 	})
@@ -69,7 +72,7 @@ func (s *NovelService) CreateNovelWithTranslation(
 	if err != nil {
 		return nil, nil, err
 	}
-
+	
 	return newNovel, newTranslation, nil
 }
 
@@ -83,149 +86,73 @@ func (s *NovelService) GetByID(ctx context.Context, id, lang string) (*novel.Nov
 		return nil, errors.New("unable to retrieve novel")
 	}
 
-	var selected *novel.NovelTranslation
-
-	if lang != "" {
-		for i := range n.Translations {
-			if n.Translations[i].Lang == lang {
-				selected = &n.Translations[i]
-				break
-			}
-		}
-	}
-
-	if selected == nil {
-		for i := range n.Translations {
-			if n.Translations[i].Lang == n.OriginalLanguage {
-				selected = &n.Translations[i]
-				break
-			}
-		}
-	}
-
-	if selected == nil && len(n.Translations) > 0 {
-		selected = &n.Translations[0]
-	}
-
-	if selected == nil {
-		return nil, errors.New("no translations available for this novel")
-	}
-
-	var coverURL *string
-	if n.Media != nil && n.Media.URL != nil {
-		coverURL = n.Media.URL
-	}
-
-	return &novel.NovelResponseDTO{
-		ID:               n.ID,
-		OriginalLanguage: n.OriginalLanguage,
-		OriginalAuthor:   n.OriginalAuthor,
-		Source:           n.Source,
-		Status:           n.Status,
-		WordCount:        n.WordCount,
-		CoverURL:         coverURL,
-		Lang:             selected.Lang,
-		Title:            selected.Title,
-		Description:      selected.Description,
-		CreatedAt:        n.CreatedAt,
-		UpdatedAt:        n.UpdatedAt,
-	}, nil
+	res := novel.MapNovelToDTO(*n, lang)
+	return &res, nil
 }
 
 func (s *NovelService) GetAll(ctx context.Context, limit, offset int, title, lang string) ([]novel.NovelResponseDTO, int64, error) {
-	novels, err := s.novelRepo.GetAll(ctx, limit, offset, title, lang)
+	var novels []novel.Novel
+	var err error
+
+	if lang != "" {
+		novels, err = s.novelRepo.GetAllByLang(ctx, lang, limit, offset)
+	} else {
+		novels, err = s.novelRepo.GetAll(ctx, limit, offset, title, lang)
+	}
+
 	if err != nil {
 		logger.Error(err, "failed to get all novels")
 		return nil, 0, errors.New("unable to retrieve novels")
 	}
 
 	count, err := s.novelRepo.Count(ctx)
+
 	if err != nil {
 		logger.Error(err, "failed to count novels")
 		return nil, 0, errors.New("unable to retrieve novels")
 	}
 
-	var responses []novel.NovelResponseDTO
+	response := make([]novel.NovelResponseDTO, len(novels))
 
-	for _, n := range novels {
-		var selected *novel.NovelTranslation
-
-		if lang != "" {
-			for i := range n.Translations {
-				if n.Translations[i].Lang == lang {
-					selected = &n.Translations[i]
-					break
-				}
-			}
-		}
-
-		if selected == nil {
-			for i := range n.Translations {
-				if n.Translations[i].Lang == n.OriginalLanguage {
-					selected = &n.Translations[i]
-					break
-				}
-			}
-		}
-
-		if selected == nil && len(n.Translations) > 0 {
-			selected = &n.Translations[0]
-		}
-
-		if selected == nil {
-			continue
-		}
-
-		var coverURL *string
-		if n.Media != nil && n.Media.URL != nil {
-			coverURL = n.Media.URL
-		}
-
-		responses = append(responses, novel.NovelResponseDTO{
-			ID:               n.ID,
-			OriginalLanguage: n.OriginalLanguage,
-			OriginalAuthor:   n.OriginalAuthor,
-			Source:           n.Source,
-			Status:           n.Status,
-			WordCount:        n.WordCount,
-			CoverURL:         coverURL,
-			Lang:             selected.Lang,
-			Title:            selected.Title,
-			Description:      selected.Description,
-			CreatedAt:        n.CreatedAt,
-			UpdatedAt:        n.UpdatedAt,
-		})
+	for i, n := range novels {
+		response[i] = novel.MapNovelToDTO(n, lang)
 	}
-
-	return responses, count, nil
+	return response, count, nil
 }
 
 func (s *NovelService) Delete(ctx context.Context, id string) error {
-	if err := s.novelRepo.Delete(ctx, id); err != nil {
+	if affected, err := s.novelRepo.Delete(ctx, id); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return errors.New("novel not found")
 		}
 		logger.Error(err, "failed to delete novel")
 		return errors.New("unable to delete novel")
+	} else if affected == 0 {
+		return errors.New("novel not found")
 	}
 	return nil
 }
 
-func (s *NovelService) UpdateCoverMedia(ctx context.Context, id string, dto novel.UpdateCoverMediaDTO) error {
+func (s *NovelService) UpdateCoverMedia(
+	ctx context.Context,
+	id string,
+	dto novel.UpdateCoverMediaDTO,
+) error {
 	uploadParams := dommedia.UploadAndSaveDTO{
 		Name:       dto.FileName,
 		FileBytes:  dto.FileBytes,
 		UploaderID: dto.UploaderID,
 	}
 
-	return s.uow.Do(ctx, func(provider repository.RepositoryProvider) error {
+	err := s.uow.Do(ctx, func(provider repository.RepositoryProvider) error {
 		savedMedia, _, err := s.mediaSrvc.UploadAndSaveWithRepo(ctx, provider.Media(), uploadParams)
 		if err != nil {
 			logger.Error(err, "failed to upload and save media for novel cover")
 			return errors.New("unable to upload cover media")
 		}
 
-		if err := provider.Novel().UpdateCoverMedia(ctx, id, savedMedia.ID); err != nil {
+		_, err = provider.Novel().UpdateCoverMedia(ctx, id, savedMedia.ID)
+		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return errors.New("novel not found")
 			}
@@ -235,9 +162,18 @@ func (s *NovelService) UpdateCoverMedia(ctx context.Context, id string, dto nove
 
 		return nil
 	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (s *NovelService) CreateTranslation(ctx context.Context, translatorID string, dto novel.CreateNovelTranslationDTO) (*novel.NovelTranslation, error) {
+func (s *NovelService) CreateTranslation(
+	ctx context.Context,
+	dto novel.CreateNovelTranslationDTO,
+) (*novel.NovelTranslation, error) {
 	_, err := s.novelRepo.GetByID(ctx, dto.NovelID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -253,26 +189,33 @@ func (s *NovelService) CreateTranslation(ctx context.Context, translatorID strin
 	}
 
 	nt := &novel.NovelTranslation{
-		NovelID:      dto.NovelID,
-		Lang:         dto.Lang,
-		Title:        dto.Title,
-		Description:  dto.Description,
-		TranslatorID: translatorID,
+		NovelID:     dto.NovelID,
+		Lang:        dto.Lang,
+		Title:       dto.Title,
+		Description: dto.Description,
 	}
 
-	if err := s.novelRepo.CreateTranslation(ctx, nt); err != nil {
+	createdTranslation, err := s.novelRepo.CreateTranslation(ctx, nt)
+	if err != nil {
 		logger.Error(err, "failed to create novel translation")
 		return nil, errors.New("unable to create translation")
 	}
 
-	return nt, nil
+	// 5. Return the created entity
+	return createdTranslation, nil
 }
 
 func (s *NovelService) DeleteTranslation(ctx context.Context, id string) error {
-	if err := s.novelRepo.DeleteTranslation(ctx, id); err != nil {
+	affected, err := s.novelRepo.DeleteTranslation(ctx, id)
+	if err != nil {
 		logger.Error(err, "failed to delete novel translation")
 		return errors.New("unable to delete translation")
 	}
+
+	if affected == 0 {
+		return errors.New("novel translation not found")
+	}
+
 	return nil
 }
 

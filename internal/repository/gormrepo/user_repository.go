@@ -3,6 +3,7 @@ package gormrepo
 import (
 	"context"
 	"fmt"
+	"simple-go/internal/domain/role"
 	"simple-go/internal/domain/user"
 	"simple-go/internal/repository"
 
@@ -88,4 +89,43 @@ func (r *userRepository) Count(ctx context.Context) (int64, error) {
 	var count int64
 	err := r.db.WithContext(ctx).Model(&user.User{}).Count(&count).Error
 	return count, err
+}
+
+// AssignRole assigns a role to a user using GORM M2M association
+func (r *userRepository) AssignRole(ctx context.Context, userID, roleID string) error {
+	var u user.User
+	if err := r.db.WithContext(ctx).First(&u, "id = ?", userID).Error; err != nil {
+		return fmt.Errorf("user not found: %w", err)
+	}
+
+	var ro role.Role
+	if err := r.db.WithContext(ctx).First(&ro, "id = ?", roleID).Error; err != nil {
+		return fmt.Errorf("role not found: %w", err)
+	}
+
+	return r.db.WithContext(ctx).Model(&u).Association("Roles").Append(&ro)
+}
+
+// RemoveRole removes a role from a user using GORM M2M association
+func (r *userRepository) RemoveRole(ctx context.Context, userID, roleID string) error {
+	var u user.User
+	if err := r.db.WithContext(ctx).First(&u, "id = ?", userID).Error; err != nil {
+		return fmt.Errorf("user not found: %w", err)
+	}
+
+	var ro role.Role
+	if err := r.db.WithContext(ctx).First(&ro, "id = ?", roleID).Error; err != nil {
+		return fmt.Errorf("role not found: %w", err)
+	}
+
+	return r.db.WithContext(ctx).Model(&u).Association("Roles").Delete(&ro)
+}
+
+// GetRoles retrieves all roles assigned to a user using GORM M2M association
+func (r *userRepository) GetRoles(ctx context.Context, userID string) ([]role.Role, error) {
+	var u user.User
+	if err := r.db.WithContext(ctx).Preload("Roles").First(&u, "id = ?", userID).Error; err != nil {
+		return nil, err
+	}
+	return u.Roles, nil
 }

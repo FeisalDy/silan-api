@@ -205,3 +205,68 @@ func (h *NovelHandler) GetNovelVolumes(c *gin.Context) {
 
 	response.Success(c, http.StatusOK, "Novel volumes retrieved successfully", volumes)
 }
+
+func (h *NovelHandler) UploadEpub(c *gin.Context) {
+	_, exists := middleware.GetUserID(c)
+	if !exists {
+		response.Error(c, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	fileHeader, err := c.FormFile("epub_file")
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "Missing epub_file in form data")
+		return
+	}
+
+	file, err := fileHeader.Open()
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "Failed to open epub file")
+		return
+	}
+	defer file.Close()
+
+	fileBytes, err := io.ReadAll(file)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "Failed to read epub file")
+		return
+	}
+
+	if len(fileBytes) == 0 {
+		response.Error(c, http.StatusBadRequest, "Epub file is empty")
+		return
+	}
+
+	result, err := h.novelService.ProcessEpubUpload(c.Request.Context(), fileBytes)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "Failed to process epub file", err)
+		return
+	}
+
+	rc := result.RawContent
+	responseData := map[string]interface{}{
+		"source_type": result.SourceType,
+		"metadata": map[string]interface{}{
+			"title":       rc.Metadata.Title,
+			"authors":     rc.Metadata.Creator,
+			"language":    rc.Metadata.Language,
+			"publisher":   rc.Metadata.Publisher,
+			"description": rc.Metadata.Description,
+			"subjects":    rc.Metadata.Subject,
+			"date":        rc.Metadata.Date,
+		},
+		"manifest_items": len(rc.Manifest),
+		"spine_items":    len(rc.Spine),
+		"content_files":  len(rc.ContentFiles),
+		"total_files":    len(rc.RawFiles),
+		"novel_data": map[string]interface{}{
+			"title":             result.NovelData.Title,
+			"original_author":   result.NovelData.OriginalAuthor,
+			"original_language": result.NovelData.OriginalLanguage,
+			"tags":              result.NovelData.Tags,
+		},
+		"total_chapters": result.TotalChapters,
+	}
+
+	response.Success(c, http.StatusOK, "EPUB file parsed successfully. Check console for detailed output.", responseData)
+}

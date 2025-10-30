@@ -26,4 +26,3 @@ func (t *Tag) BeforeCreate(tx *gorm.DB) error {
 func (Tag) TableName() string {
 	return "tags"
 }
-

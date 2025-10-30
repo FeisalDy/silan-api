@@ -58,12 +58,13 @@ func Initialize() (*App, error) {
 
 	uploadService := service.NewUploadService(nil, cfg.Media.ImgBBAPIKey, cfg.Media.ImgBBTTL)
 	mediaService := service.NewMediaService(mediaRepo, uploadService)
+	epubService := service.NewEpubService()
 
 	// Initialize services
 	authService := service.NewAuthService(uow, userRepo, roleRepo, jwtManager)
 	userService := service.NewUserService(userRepo, roleRepo)
 	volumeService := service.NewVolumeService(uow, volumeRepo, mediaService)
-	novelService := service.NewNovelService(uow, novelRepo, mediaService, volumeService)
+	novelService := service.NewNovelService(uow, novelRepo, mediaService, volumeService, epubService)
 	chapterService := service.NewChapterService(uow, chapterRepo, novelRepo)
 
 	// Initialize handlers

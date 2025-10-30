@@ -3,28 +3,34 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	dommedia "simple-go/internal/domain/media"
 	"simple-go/internal/domain/novel"
 	"simple-go/internal/domain/volume"
 	"simple-go/internal/repository"
+	"simple-go/pkg/epub/transformer"
 	"simple-go/pkg/logger"
 
 	"gorm.io/gorm"
 )
 
 type NovelService struct {
-	uow        repository.UnitOfWork
-	novelRepo  repository.NovelRepository
-	mediaSrvc  *MediaService
-	volumeSrvc *VolumeService
+	uow                repository.UnitOfWork
+	novelRepo          repository.NovelRepository
+	mediaSrvc          *MediaService
+	volumeSrvc         *VolumeService
+	epubSrvc           *EpubService
+	transformerFactory *transformer.EpubTransformerFactory
 }
 
-func NewNovelService(uow repository.UnitOfWork, novelRepo repository.NovelRepository, mediaSrvc *MediaService, volumeSrvc *VolumeService) *NovelService {
+func NewNovelService(uow repository.UnitOfWork, novelRepo repository.NovelRepository, mediaSrvc *MediaService, volumeSrvc *VolumeService, epubSrvc *EpubService) *NovelService {
 	return &NovelService{
-		uow:        uow,
-		novelRepo:  novelRepo,
-		mediaSrvc:  mediaSrvc,
-		volumeSrvc: volumeSrvc,
+		uow:                uow,
+		novelRepo:          novelRepo,
+		mediaSrvc:          mediaSrvc,
+		volumeSrvc:         volumeSrvc,
+		epubSrvc:           epubSrvc,
+		transformerFactory: transformer.NewEpubTransformerFactory(),
 	}
 }
 
@@ -72,7 +78,7 @@ func (s *NovelService) CreateNovelWithTranslation(
 	if err != nil {
 		return nil, nil, err
 	}
-	
+
 	return newNovel, newTranslation, nil
 }
 
@@ -221,4 +227,58 @@ func (s *NovelService) DeleteTranslation(ctx context.Context, id string) error {
 
 func (s *NovelService) GetNovelVolumes(ctx context.Context, novelID, lang string) ([]volume.VolumeResponseDTO, error) {
 	return s.volumeSrvc.GetNovelVolumes(ctx, novelID, lang)
+}
+
+func (s *NovelService) ProcessEpubUpload(ctx context.Context, fileBytes []byte) (*transformer.EpubProcessResult, error) {
+	// Step 1: Parse the raw EPUB file
+	epubContent, err := s.epubSrvc.UploadAndParseEpub(ctx, fileBytes)
+	if err != nil {
+		logger.Error(err, "Failed to parse EPUB")
+		return nil, err
+	}
+
+	// Step 2: Auto-detect source and get appropriate transformer
+	tr, err := s.transformerFactory.DetectAndGetTransformer(epubContent)
+	if err != nil {
+		logger.Error(err, "Failed to detect EPUB source type")
+		return nil, err
+	}
+
+	// Step 3: Transform EPUB content to database-ready format
+	novelData, err := tr.TransformToNovelData(ctx, epubContent)
+	if err != nil {
+		logger.Error(err, "Failed to transform novel data")
+		return nil, err
+	}
+
+	chapters, err := tr.TransformToChapters(ctx, epubContent)
+	if err != nil {
+		logger.Error(err, "Failed to transform chapters")
+		return nil, err
+	}
+
+	result := &transformer.EpubProcessResult{
+		RawContent:    epubContent,
+		NovelData:     novelData,
+		Chapters:      chapters,
+		SourceType:    tr.GetSourceType(),
+		TotalChapters: len(chapters),
+	}
+
+	logger.Info("Successfully processed EPUB upload")
+	logger.Info(fmt.Sprintf("Source Type: %s", result.SourceType))
+	logger.Info(fmt.Sprintf("Title: %s", novelData.Title))
+	logger.Info(fmt.Sprintf("Author: %s", novelData.OriginalAuthor))
+	logger.Info(fmt.Sprintf("Chapters: %d", result.TotalChapters))
+	logger.Info(fmt.Sprintf("Tags: %v", novelData.Tags))
+
+	// TODO: Future enhancement - save to database
+	// This is where you would:
+	// - Create/update Novel record with novelData
+	// - Create Volume if needed
+	// - Create Chapter records from chapters array
+	// - Upload cover image if available (novelData.CoverImage)
+	// - Create/link tags
+
+	return result, nil
 }

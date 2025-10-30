@@ -83,6 +83,7 @@ func setupRoutes(router *gin.Engine, cfg *server.Config) {
 		novels.Use(middleware.JWTAuth(cfg.JWTManager))
 		{
 			novels.POST("", middleware.RequirePermission("novel", "create", cfg.Enforcer, roleGetter), cfg.NovelHandler.Create)
+			novels.POST("/epub", middleware.RequirePermission("novel", "create", cfg.Enforcer, roleGetter), cfg.NovelHandler.UploadEpub)
 			novels.DELETE("/:id", middleware.RequirePermission("novel", "delete", cfg.Enforcer, roleGetter), cfg.NovelHandler.Delete)
 			novels.PATCH("/:id/cover", middleware.RequirePermission("novel", "update", cfg.Enforcer, roleGetter), cfg.NovelHandler.UpdateCoverMedia)
 

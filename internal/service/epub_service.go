@@ -17,7 +17,7 @@ type EpubService struct{}
 func NewEpubService() *EpubService { return &EpubService{} }
 
 // UploadAndParseEpub handles the EPUB file upload and returns parsed content
-func (s *EpubService) UploadAndParseEpub(ctx context.Context, fileBytes []byte) (*epub.EpubContent, error) {
+func (s *EpubService) UploadAndExtractRawEpub(ctx context.Context, fileBytes []byte) (*epub.RawEpub, error) {
 	if len(fileBytes) == 0 {
 		return nil, errors.New("epub file is empty")
 	}
@@ -28,7 +28,7 @@ func (s *EpubService) UploadAndParseEpub(ctx context.Context, fileBytes []byte) 
 		return nil, err
 	}
 
-	return epubContent, nil
+	return &epub.RawEpub{RawFiles: epubContent.RawFiles, OPFPath: epubContent.OPFPath}, nil
 }
 
 // parseEpubSafe wraps parseEpub with panic recovery

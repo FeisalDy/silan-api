@@ -243,29 +243,21 @@ func (h *NovelHandler) UploadEpub(c *gin.Context) {
 		return
 	}
 
-	rc := result.RawContent
+	// Prepare response with parsed data from the processing result
 	responseData := map[string]interface{}{
 		"source_type": result.SourceType,
-		"metadata": map[string]interface{}{
-			"title":       rc.Metadata.Title,
-			"authors":     rc.Metadata.Creator,
-			"language":    rc.Metadata.Language,
-			"publisher":   rc.Metadata.Publisher,
-			"description": rc.Metadata.Description,
-			"subjects":    rc.Metadata.Subject,
-			"date":        rc.Metadata.Date,
-		},
-		"manifest_items": len(rc.Manifest),
-		"spine_items":    len(rc.Spine),
-		"content_files":  len(rc.ContentFiles),
-		"total_files":    len(rc.RawFiles),
 		"novel_data": map[string]interface{}{
 			"title":             result.NovelData.Title,
 			"original_author":   result.NovelData.OriginalAuthor,
 			"original_language": result.NovelData.OriginalLanguage,
+			"description":       result.NovelData.Description,
+			"synopsis":          result.NovelData.Synopsis,
+			"publisher":         result.NovelData.Publisher,
 			"tags":              result.NovelData.Tags,
+			"has_cover_image":   len(result.NovelData.CoverImage) > 0,
 		},
 		"total_chapters": result.TotalChapters,
+		"total_files":    len(result.RawContent.RawFiles),
 	}
 
 	response.Success(c, http.StatusOK, "EPUB file parsed successfully. Check console for detailed output.", responseData)

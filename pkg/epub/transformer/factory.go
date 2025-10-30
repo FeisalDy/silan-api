@@ -22,7 +22,7 @@ func NewEpubTransformerFactory() *EpubTransformerFactory {
 }
 
 // DetectAndGetTransformer detects the EPUB source and returns appropriate transformer
-func (f *EpubTransformerFactory) DetectAndGetTransformer(content *epub.EpubContent) (EpubTransformer, error) {
+func (f *EpubTransformerFactory) DetectAndGetTransformer(content *epub.RawEpub) (EpubTransformer, error) {
 	for _, transformer := range f.transformers {
 		if transformer.DetectSource(content) {
 			logger.Info(fmt.Sprintf("Using transformer: %s", transformer.GetSourceType()))

@@ -230,35 +230,35 @@ func (s *NovelService) GetNovelVolumes(ctx context.Context, novelID, lang string
 }
 
 func (s *NovelService) ProcessEpubUpload(ctx context.Context, fileBytes []byte) (*transformer.EpubProcessResult, error) {
-	// Step 1: Parse the raw EPUB file
-	epubContent, err := s.epubSrvc.UploadAndParseEpub(ctx, fileBytes)
+	// Step 1: Extract raw EPUB files (transformers will parse OPF themselves)
+	rawEpub, err := s.epubSrvc.UploadAndExtractRawEpub(ctx, fileBytes)
 	if err != nil {
-		logger.Error(err, "Failed to parse EPUB")
+		logger.Error(err, "Failed to extract raw EPUB")
 		return nil, err
 	}
 
 	// Step 2: Auto-detect source and get appropriate transformer
-	tr, err := s.transformerFactory.DetectAndGetTransformer(epubContent)
+	tr, err := s.transformerFactory.DetectAndGetTransformer(rawEpub)
 	if err != nil {
 		logger.Error(err, "Failed to detect EPUB source type")
 		return nil, err
 	}
 
 	// Step 3: Transform EPUB content to database-ready format
-	novelData, err := tr.TransformToNovelData(ctx, epubContent)
+	novelData, err := tr.TransformToNovelData(ctx, rawEpub)
 	if err != nil {
 		logger.Error(err, "Failed to transform novel data")
 		return nil, err
 	}
 
-	chapters, err := tr.TransformToChapters(ctx, epubContent)
+	chapters, err := tr.TransformToChapters(ctx, rawEpub)
 	if err != nil {
 		logger.Error(err, "Failed to transform chapters")
 		return nil, err
 	}
 
 	result := &transformer.EpubProcessResult{
-		RawContent:    epubContent,
+		RawContent:    rawEpub,
 		NovelData:     novelData,
 		Chapters:      chapters,
 		SourceType:    tr.GetSourceType(),

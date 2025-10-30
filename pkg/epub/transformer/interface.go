@@ -2,6 +2,7 @@ package transformer
 
 import (
 	"context"
+
 	"simple-go/pkg/epub"
 )
 
@@ -9,16 +10,18 @@ import (
 type EpubSourceType string
 
 const (
-	EpubSource404NovelDownloader      EpubSourceType = "source_a"
-	EpubSourceDipubdLightnovelCrawler EpubSourceType = "source_b"
+	EpubSource404NovelDownloader      EpubSourceType = "404_novel_downloader"
+	EpubSourceDipubdLightnovelCrawler EpubSourceType = "dipubd_lightnovel_crawler"
 	EpubSourceGeneric                 EpubSourceType = "generic"
 )
 
 // EpubTransformer defines the interface for transforming EPUB content to database models
 type EpubTransformer interface {
-	DetectSource(content *epub.EpubContent) bool
-	TransformToNovelData(ctx context.Context, content *epub.EpubContent) (*NovelData, error)
-	TransformToChapters(ctx context.Context, content *epub.EpubContent) ([]ChapterData, error)
+	// DetectSource should look at raw EPUB files and determine whether this transformer
+	// can handle the source. Transformers are responsible for parsing OPF/manifest/spine.
+	DetectSource(content *epub.RawEpub) bool
+	TransformToNovelData(ctx context.Context, content *epub.RawEpub) (*NovelData, error)
+	TransformToChapters(ctx context.Context, content *epub.RawEpub) ([]ChapterData, error)
 	GetSourceType() EpubSourceType
 }
 
@@ -44,7 +47,9 @@ type ChapterData struct {
 
 // EpubProcessResult contains all processed EPUB data ready for database insertion
 type EpubProcessResult struct {
-	RawContent    *epub.EpubContent
+	// RawContent contains the original raw files from the uploaded EPUB. Transformers
+	// will parse OPF/manifest/spine and produce NovelData/Chapters.
+	RawContent    *epub.RawEpub
 	NovelData     *NovelData
 	Chapters      []ChapterData
 	SourceType    EpubSourceType

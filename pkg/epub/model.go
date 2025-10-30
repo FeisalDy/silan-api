@@ -57,3 +57,10 @@ type EpubContent struct {
 	RawFiles     map[string][]byte      // All raw files for reference
 	OPFPath      string
 }
+
+// RawEpub is the minimal representation returned by EpubService.
+// Transformers are responsible for parsing OPF/manifest/spine from this raw data.
+type RawEpub struct {
+	RawFiles map[string][]byte
+	OPFPath  string
+}

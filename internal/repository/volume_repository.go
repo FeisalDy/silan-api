@@ -7,6 +7,7 @@ import (
 
 type VolumeRepository interface {
 	Create(ctx context.Context, v *volume.Volume) (*volume.Volume, error)
+	CreateTranslation(ctx context.Context, vt *volume.VolumeTranslation) (*volume.VolumeTranslation, error)
 	Update(ctx context.Context, v *volume.Volume) (*volume.Volume, error)
 
 	GetByID(ctx context.Context, id string) (*volume.Volume, error)

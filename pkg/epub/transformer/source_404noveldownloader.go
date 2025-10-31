@@ -322,11 +322,14 @@ func (t *Source404NovelDownloaderTransformer) TransformToChapters(ctx context.Co
 			// Extract chapter title from content
 			chapterTitle := extractChapterTitle(contentFile.RawHTML, chapterOrder)
 
+			// Extract only body content and remove classes
+			cleanContent := epub.ExtractBodyContent([]byte(contentFile.RawHTML))
+
 			chapters = append(chapters, ChapterData{
 				VolumeIndex: volumeIndex,
 				OrderNum:    chapterOrder,
 				Title:       chapterTitle,
-				Content:     contentFile.RawHTML,
+				Content:     cleanContent,
 				PlainText:   contentFile.PlainText,
 			})
 

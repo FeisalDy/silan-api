@@ -1,22 +1,18 @@
-version: '3.8'
+version: "3.9"
 
 services:
   postgres:
-    image: postgres:15-alpine
-    container_name: simple_go_postgres
+    image: postgres:16
+    container_name: postgres-db
+    restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: simple_go_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: myappdb
     ports:
       - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U user -d myappdb"]
       interval: 10s
       timeout: 5s
       retries: 5
-
-volumes:
-  postgres_data:

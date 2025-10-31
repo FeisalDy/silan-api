@@ -110,7 +110,7 @@ func (h *NovelHandler) Delete(c *gin.Context) {
 
 	err := h.novelService.Delete(c.Request.Context(), id)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, fmt.Sprintf("Failed to delete novel: %v", err))
+		response.Error(c, http.StatusInternalServerError, fmt.Sprintf("Failed to delete novel: %v", err))
 		return
 	}
 

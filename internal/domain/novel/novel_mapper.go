@@ -13,6 +13,17 @@ func MapNovelToDTO(n Novel, lang string) NovelResponseDTO {
 		coverURL = n.Media.URL
 	}
 
+	var (
+		selectedLang        string
+		selectedTitle       string
+		selectedDescription string
+	)
+	if selected != nil {
+		selectedLang = selected.Lang
+		selectedTitle = selected.Title
+		selectedDescription = *selected.Description
+	}
+
 	return NovelResponseDTO{
 		ID:               n.ID,
 		OriginalLanguage: n.OriginalLanguage,
@@ -21,9 +32,9 @@ func MapNovelToDTO(n Novel, lang string) NovelResponseDTO {
 		Status:           n.Status,
 		WordCount:        n.WordCount,
 		CoverURL:         coverURL,
-		Lang:             selected.Lang,
-		Title:            selected.Title,
-		Description:      selected.Description,
+		Lang:             selectedLang,
+		Title:            selectedTitle,
+		Description:      &selectedDescription,
 		Tags:             tag.MapTagsToUpdateDTOs(n.Tags),
 		Genres:           genre.MapGenresToUpdateDTOs(n.Genres),
 		CreatedAt:        n.CreatedAt,

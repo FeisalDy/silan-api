@@ -160,6 +160,18 @@ func (p *epubPersistence) createVolumes() error {
 			return fmt.Errorf("failed to create volume %d", newVolume.Number)
 		}
 
+		// Create volume translation
+		volumeTranslation := &volume.VolumeTranslation{
+			VolumeID: createdVolume.ID,
+			Lang:     p.result.NovelData.OriginalLanguage,
+			Title:    volData.Title,
+		}
+
+		if _, err := p.provider.Volume().CreateTranslation(p.ctx, volumeTranslation); err != nil {
+			logger.Error(err, fmt.Sprintf("Failed to create volume %d translation", createdVolume.Number))
+			return fmt.Errorf("failed to create volume %d translation", createdVolume.Number)
+		}
+
 		p.volumes[i] = createdVolume
 	}
 

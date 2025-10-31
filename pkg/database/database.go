@@ -60,12 +60,12 @@ func migrateDatabase(db *gorm.DB) error {
 	err := db.AutoMigrate(
 		&user.User{},
 		&role.Role{},
-		&userrole.UserRole{}, // Custom join table with CASCADE delete
+		&userrole.UserRole{},
 		&genre.Genre{},
-		&novelgenre.NovelGenre{},
 		&tag.Tag{},
-		&noveltag.NovelTag{},
 		&novel.Novel{},
+		&noveltag.NovelTag{},
+		&novelgenre.NovelGenre{},
 		&novel.NovelTranslation{},
 		&volume.Volume{},
 		&volume.VolumeTranslation{},

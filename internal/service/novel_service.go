@@ -128,9 +128,6 @@ func (s *NovelService) GetAll(ctx context.Context, limit, offset int, title, lan
 
 func (s *NovelService) Delete(ctx context.Context, id string) error {
 	if affected, err := s.novelRepo.Delete(ctx, id); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("novel not found")
-		}
 		logger.Error(err, "failed to delete novel")
 		return errors.New("unable to delete novel")
 	} else if affected == 0 {

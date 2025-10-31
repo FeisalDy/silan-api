@@ -30,13 +30,13 @@ migrate: ## Run database migrations (via application startup)
 	@echo "Run 'make run' to start the application and run migrations"
 
 docker-up: ## Start PostgreSQL with Docker Compose
-	docker-compose up -d
+	docker compose up -d
 
 docker-down: ## Stop Docker containers
-	docker-compose down
+	docker compose down
 
 docker-logs: ## View Docker logs
-	docker-compose logs -f
+	docker compose logs -f
 
 lint: ## Run linter
 	golangci-lint run

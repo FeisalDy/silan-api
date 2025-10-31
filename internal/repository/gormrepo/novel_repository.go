@@ -30,6 +30,7 @@ func (r *novelRepository) GetByID(ctx context.Context, id string) (*novel.Novel,
 		Preload("Genres").
 		Preload("Tags").
 		Preload("Translations").
+		Joins("JOIN novel_translations ON novel_translations.novel_id = novels.id").
 		First(&n, "id = ?", id).Error
 	if err != nil {
 		return nil, err
@@ -45,6 +46,7 @@ func (r *novelRepository) GetAll(ctx context.Context, limit, offset int, title, 
 		Preload("Translations").
 		Preload("Genres").
 		Preload("Tags").
+		Joins("JOIN novel_translations ON novel_translations.novel_id = novels.id").
 		Order("novels.updated_at DESC")
 
 	if limit > 0 {
@@ -65,9 +67,11 @@ func (r *novelRepository) GetAllByLang(ctx context.Context, lang string, limit, 
 	var novels []novel.Novel
 
 	query := r.db.WithContext(ctx).
+		Preload("Translations", "lang = ?", lang).
 		Preload("Media").
 		Preload("Genres").
 		Preload("Tags").
+		Joins("JOIN novel_translations ON novel_translations.novel_id = novels.id AND novel_translations.lang = ?", lang).
 		Order("novels.updated_at DESC")
 
 	if limit > 0 {
@@ -75,12 +79,6 @@ func (r *novelRepository) GetAllByLang(ctx context.Context, lang string, limit, 
 	}
 	if offset > 0 {
 		query = query.Offset(offset)
-	}
-
-	if lang != "" {
-		query = query.Preload("Translations", "lang = ?", lang)
-	} else {
-		query = query.Preload("Translations")
 	}
 
 	if err := query.Find(&novels).Error; err != nil {

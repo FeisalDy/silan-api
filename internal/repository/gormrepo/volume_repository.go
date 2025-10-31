@@ -22,6 +22,13 @@ func (r *volumeRepository) Create(ctx context.Context, v *volume.Volume) (*volum
 	return v, nil
 }
 
+func (r *volumeRepository) CreateTranslation(ctx context.Context, vt *volume.VolumeTranslation) (*volume.VolumeTranslation, error) {
+	if err := r.db.WithContext(ctx).Create(vt).Error; err != nil {
+		return nil, err
+	}
+	return vt, nil
+}
+
 func (r *volumeRepository) Update(ctx context.Context, v *volume.Volume) (*volume.Volume, error) {
 	if err := r.db.WithContext(ctx).
 		Model(&volume.Volume{}).

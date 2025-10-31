@@ -16,4 +16,7 @@ type RepositoryProvider interface {
 	Novel() NovelRepository
 	Chapter() ChapterRepository
 	Media() MediaRepository
+	Volume() VolumeRepository
+	Tag() TagRepository
+	NovelTag() NovelTagRepository
 }

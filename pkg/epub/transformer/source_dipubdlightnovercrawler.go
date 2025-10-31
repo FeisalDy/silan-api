@@ -98,11 +98,21 @@ func (t *SourceDipubdLightnovelCrawlerTransformer) TransformToNovelData(ctx cont
 		}
 	}
 
-	// Source B doesn't have separate synopsis file
-	logger.Info("Source B: Using description as synopsis")
-	data.Synopsis = data.Description
-
 	return data, nil
+}
+
+func (t *SourceDipubdLightnovelCrawlerTransformer) TransformToVolumes(ctx context.Context, content *epub.RawEpub) ([]VolumeData, error) {
+	// Dipubd lightnovel crawler source typically doesn't have explicit volumes
+	// Create a single virtual volume
+	volumes := []VolumeData{
+		{
+			Number:    1,
+			Title:     "Volume 1",
+			IsVirtual: true,
+		},
+	}
+	logger.Info("Dipubd source: Created single virtual volume")
+	return volumes, nil
 }
 
 func (t *SourceDipubdLightnovelCrawlerTransformer) TransformToChapters(ctx context.Context, content *epub.RawEpub) ([]ChapterData, error) {
@@ -174,10 +184,11 @@ func (t *SourceDipubdLightnovelCrawlerTransformer) TransformToChapters(ctx conte
 		chapterTitle := extractChapterTitle(contentFile.RawHTML, order+1)
 
 		chapters = append(chapters, ChapterData{
-			OrderNum:  order + 1,
-			Title:     chapterTitle,
-			Content:   contentFile.RawHTML,
-			PlainText: contentFile.PlainText,
+			VolumeIndex: 0, // All chapters belong to the first (virtual) volume
+			OrderNum:    order + 1,
+			Title:       chapterTitle,
+			Content:     contentFile.RawHTML,
+			PlainText:   contentFile.PlainText,
 		})
 	}
 

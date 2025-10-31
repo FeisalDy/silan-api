@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
+
 	dommedia "simple-go/internal/domain/media"
 	"simple-go/internal/domain/novel"
 	"simple-go/internal/domain/volume"
@@ -230,7 +230,6 @@ func (s *NovelService) GetNovelVolumes(ctx context.Context, novelID, lang string
 }
 
 func (s *NovelService) ProcessEpubUpload(ctx context.Context, fileBytes []byte) (*transformer.EpubProcessResult, error) {
-	// Step 1: Extract raw EPUB files (transformers will parse OPF themselves)
 	rawEpub, err := s.epubSrvc.UploadAndExtractRawEpub(ctx, fileBytes)
 	if err != nil {
 		logger.Error(err, "Failed to extract raw EPUB")
@@ -251,6 +250,12 @@ func (s *NovelService) ProcessEpubUpload(ctx context.Context, fileBytes []byte) 
 		return nil, err
 	}
 
+	volumes, err := tr.TransformToVolumes(ctx, rawEpub)
+	if err != nil {
+		logger.Error(err, "Failed to transform volumes")
+		return nil, err
+	}
+
 	chapters, err := tr.TransformToChapters(ctx, rawEpub)
 	if err != nil {
 		logger.Error(err, "Failed to transform chapters")
@@ -260,25 +265,36 @@ func (s *NovelService) ProcessEpubUpload(ctx context.Context, fileBytes []byte) 
 	result := &transformer.EpubProcessResult{
 		RawContent:    rawEpub,
 		NovelData:     novelData,
+		Volumes:       volumes,
 		Chapters:      chapters,
 		SourceType:    tr.GetSourceType(),
 		TotalChapters: len(chapters),
+		TotalVolumes:  len(volumes),
 	}
 
-	logger.Info("Successfully processed EPUB upload")
-	logger.Info(fmt.Sprintf("Source Type: %s", result.SourceType))
-	logger.Info(fmt.Sprintf("Title: %s", novelData.Title))
-	logger.Info(fmt.Sprintf("Author: %s", novelData.OriginalAuthor))
-	logger.Info(fmt.Sprintf("Chapters: %d", result.TotalChapters))
-	logger.Info(fmt.Sprintf("Tags: %v", novelData.Tags))
+	return result, nil
+}
 
-	// TODO: Future enhancement - save to database
-	// This is where you would:
-	// - Create/update Novel record with novelData
-	// - Create Volume if needed
-	// - Create Chapter records from chapters array
-	// - Upload cover image if available (novelData.CoverImage)
-	// - Create/link tags
+func (s *NovelService) ProcessAndSaveEpubUpload(ctx context.Context, fileBytes []byte, creatorID string) (*transformer.EpubProcessResult, error) {
+	result, err := s.ProcessEpubUpload(ctx, fileBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.uow.Do(ctx, func(provider repository.RepositoryProvider) error {
+		persist := &epubPersistence{
+			ctx:       ctx,
+			creatorID: creatorID,
+			result:    result,
+			provider:  provider,
+			mediaSrvc: s.mediaSrvc,
+		}
+		return persist.run()
+	})
+
+	if err != nil {
+		return nil, err
+	}
 
 	return result, nil
 }

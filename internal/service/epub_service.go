@@ -16,7 +16,6 @@ type EpubService struct{}
 
 func NewEpubService() *EpubService { return &EpubService{} }
 
-// UploadAndParseEpub handles the EPUB file upload and returns parsed content
 func (s *EpubService) UploadAndExtractRawEpub(ctx context.Context, fileBytes []byte) (*epub.RawEpub, error) {
 	if len(fileBytes) == 0 {
 		return nil, errors.New("epub file is empty")
@@ -24,14 +23,13 @@ func (s *EpubService) UploadAndExtractRawEpub(ctx context.Context, fileBytes []b
 
 	epubContent, err := s.parseEpubSafe(fileBytes)
 	if err != nil {
-		logger.Error(err, "Failed to parse EPUB file")
+		logger.Error(err, "failed to parse EPUB file")
 		return nil, err
 	}
 
 	return &epub.RawEpub{RawFiles: epubContent.RawFiles, OPFPath: epubContent.OPFPath}, nil
 }
 
-// parseEpubSafe wraps parseEpub with panic recovery
 func (s *EpubService) parseEpubSafe(fileBytes []byte) (content *epub.EpubContent, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -45,13 +43,11 @@ func (s *EpubService) parseEpubSafe(fileBytes []byte) (content *epub.EpubContent
 
 // parseEpub extracts and parses all EPUB content
 func (s *EpubService) parseEpub(fileBytes []byte) (*epub.EpubContent, error) {
-	// Step 1: Open ZIP archive
 	reader, err := zip.NewReader(bytes.NewReader(fileBytes), int64(len(fileBytes)))
 	if err != nil {
-		return nil, fmt.Errorf("failed to open epub as zip: %w", err)
+		return nil, errors.New("failed to open epub as zip")
 	}
 
-	// Step 2: Extract all files
 	rawFiles := make(map[string][]byte)
 	for _, file := range reader.File {
 		if file.FileInfo().IsDir() {
@@ -78,18 +74,14 @@ func (s *EpubService) parseEpub(fileBytes []byte) (*epub.EpubContent, error) {
 		return nil, errors.New("no files found in epub")
 	}
 
-	// Step 3: Find OPF path
 	opfPath, err := epub.FindOpfPath(rawFiles)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find OPF file: %w", err)
+		return nil, errors.New("failed to find OPF file")
 	}
 
-	logger.Info(fmt.Sprintf("Found OPF file at: %s", opfPath))
-
-	// Step 4: Parse OPF file
 	opfContent, ok := rawFiles[opfPath]
 	if !ok {
-		return nil, fmt.Errorf("OPF file not found at path: %s", opfPath)
+		return nil, errors.New("OPF file not found")
 	}
 
 	opfPackage, err := epub.ParseOPF(opfContent)
@@ -97,7 +89,6 @@ func (s *EpubService) parseEpub(fileBytes []byte) (*epub.EpubContent, error) {
 		return nil, fmt.Errorf("failed to parse OPF: %w", err)
 	}
 
-	// Step 5: Get base directory for resolving relative paths
 	baseDir := ""
 	if idx := strings.LastIndex(opfPath, "/"); idx >= 0 {
 		baseDir = opfPath[:idx+1]

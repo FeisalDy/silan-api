@@ -45,3 +45,15 @@ func (rp *repoProvider) Chapter() repository.ChapterRepository {
 func (rp *repoProvider) Media() repository.MediaRepository {
 	return NewMediaRepository(rp.db)
 }
+
+func (rp *repoProvider) Volume() repository.VolumeRepository {
+	return NewVolumeRepository(rp.db)
+}
+
+func (rp *repoProvider) Tag() repository.TagRepository {
+	return NewTagRepository(rp.db)
+}
+
+func (rp *repoProvider) NovelTag() repository.NovelTagRepository {
+	return NewNovelTagRepository(rp.db)
+}

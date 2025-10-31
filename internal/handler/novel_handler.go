@@ -207,7 +207,7 @@ func (h *NovelHandler) GetNovelVolumes(c *gin.Context) {
 }
 
 func (h *NovelHandler) UploadEpub(c *gin.Context) {
-	_, exists := middleware.GetUserID(c)
+	userID, exists := middleware.GetUserID(c)
 	if !exists {
 		response.Error(c, http.StatusUnauthorized, "Unauthorized")
 		return
@@ -237,10 +237,20 @@ func (h *NovelHandler) UploadEpub(c *gin.Context) {
 		return
 	}
 
-	result, err := h.novelService.ProcessEpubUpload(c.Request.Context(), fileBytes)
+	result, err := h.novelService.ProcessAndSaveEpubUpload(c.Request.Context(), fileBytes, userID)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "Failed to process epub file", err)
 		return
+	}
+
+	// Prepare volume summary
+	volumeSummary := []map[string]interface{}{}
+	for _, vol := range result.Volumes {
+		volumeSummary = append(volumeSummary, map[string]interface{}{
+			"number":     vol.Number,
+			"title":      vol.Title,
+			"is_virtual": vol.IsVirtual,
+		})
 	}
 
 	// Prepare response with parsed data from the processing result
@@ -251,11 +261,12 @@ func (h *NovelHandler) UploadEpub(c *gin.Context) {
 			"original_author":   result.NovelData.OriginalAuthor,
 			"original_language": result.NovelData.OriginalLanguage,
 			"description":       result.NovelData.Description,
-			"synopsis":          result.NovelData.Synopsis,
 			"publisher":         result.NovelData.Publisher,
 			"tags":              result.NovelData.Tags,
 			"has_cover_image":   len(result.NovelData.CoverImage) > 0,
 		},
+		"volumes":        volumeSummary,
+		"total_volumes":  result.TotalVolumes,
 		"total_chapters": result.TotalChapters,
 		"total_files":    len(result.RawContent.RawFiles),
 	}

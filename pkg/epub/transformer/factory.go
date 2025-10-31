@@ -16,7 +16,6 @@ func NewEpubTransformerFactory() *EpubTransformerFactory {
 		transformers: []EpubTransformer{
 			NewSource404NovelDownloaderTransformer(),
 			NewSourceDipubdLightnovelCrawlerTransformer(),
-			NewGenericTransformer(), // Generic should be last (fallback)
 		},
 	}
 }
@@ -30,7 +29,7 @@ func (f *EpubTransformerFactory) DetectAndGetTransformer(content *epub.RawEpub) 
 		}
 	}
 
-	return nil, errors.New("no suitable transformer found")
+	return nil, errors.New("unsupported EPUB source format: no compatible transformer found")
 }
 
 // GetTransformerByType returns a transformer for a specific source type
@@ -46,12 +45,6 @@ func (f *EpubTransformerFactory) GetTransformerByType(sourceType EpubSourceType)
 
 // RegisterTransformer allows dynamic registration of new transformers
 func (f *EpubTransformerFactory) RegisterTransformer(transformer EpubTransformer) {
-	// Insert before the last element (which should be Generic fallback)
-	if len(f.transformers) > 0 {
-		// Insert before Generic (last element)
-		f.transformers = append(f.transformers[:len(f.transformers)-1], transformer, f.transformers[len(f.transformers)-1])
-	} else {
-		f.transformers = append(f.transformers, transformer)
-	}
+	f.transformers = append(f.transformers, transformer)
 	logger.Info(fmt.Sprintf("Registered new transformer: %s", transformer.GetSourceType()))
 }

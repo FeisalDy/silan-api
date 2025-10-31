@@ -6,7 +6,6 @@ import (
 	"simple-go/pkg/epub"
 )
 
-// EpubSourceType represents different EPUB sources with different formats
 type EpubSourceType string
 
 const (
@@ -15,17 +14,14 @@ const (
 	EpubSourceGeneric                 EpubSourceType = "generic"
 )
 
-// EpubTransformer defines the interface for transforming EPUB content to database models
 type EpubTransformer interface {
-	// DetectSource should look at raw EPUB files and determine whether this transformer
-	// can handle the source. Transformers are responsible for parsing OPF/manifest/spine.
 	DetectSource(content *epub.RawEpub) bool
 	TransformToNovelData(ctx context.Context, content *epub.RawEpub) (*NovelData, error)
+	TransformToVolumes(ctx context.Context, content *epub.RawEpub) ([]VolumeData, error)
 	TransformToChapters(ctx context.Context, content *epub.RawEpub) ([]ChapterData, error)
 	GetSourceType() EpubSourceType
 }
 
-// NovelData represents extracted novel information ready for database
 type NovelData struct {
 	Title            string
 	OriginalAuthor   string
@@ -34,24 +30,28 @@ type NovelData struct {
 	OriginalLanguage string
 	Tags             []string
 	CoverImage       []byte
-	Synopsis         string
 }
 
-// ChapterData represents extracted chapter information
+type VolumeData struct {
+	Number    int    // Volume number (1, 2, 3, etc.)
+	Title     string // Volume title (optional)
+	IsVirtual bool   // True if this is a virtual volume (when source has no volumes)
+}
+
 type ChapterData struct {
-	OrderNum  int
-	Title     string
-	Content   string
-	PlainText string
+	VolumeIndex int // Index into the Volumes array (which volume this chapter belongs to)
+	OrderNum    int // Chapter order within the volume
+	Title       string
+	Content     string
+	PlainText   string
 }
 
-// EpubProcessResult contains all processed EPUB data ready for database insertion
 type EpubProcessResult struct {
-	// RawContent contains the original raw files from the uploaded EPUB. Transformers
-	// will parse OPF/manifest/spine and produce NovelData/Chapters.
 	RawContent    *epub.RawEpub
 	NovelData     *NovelData
-	Chapters      []ChapterData
+	Volumes       []VolumeData  // List of volumes (at least one, even if virtual)
+	Chapters      []ChapterData // Chapters with volume references
 	SourceType    EpubSourceType
 	TotalChapters int
+	TotalVolumes  int
 }

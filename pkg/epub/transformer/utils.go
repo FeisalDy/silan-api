@@ -36,3 +36,39 @@ func extractChapterTitle(htmlContent string, defaultNum int) string {
 	// Fallback to default chapter number
 	return fmt.Sprintf("Chapter %d", defaultNum)
 }
+
+// extractVolumeNumberFromFilename extracts volume number from 404 source filenames
+// e.g., "No00001Chapter.xhtml" -> 1, "No00042Section.xhtml" -> 42
+func extractVolumeNumberFromFilename(filename string) int {
+	// Extract the numeric part after "No" and before "Chapter" or "Section"
+	lower := strings.ToLower(filename)
+
+	// Find "no" prefix
+	noIndex := strings.Index(lower, "no")
+	if noIndex == -1 {
+		return 1 // Default to volume 1
+	}
+
+	// Start after "no"
+	numStart := noIndex + 2
+	numEnd := numStart
+
+	// Find the end of the numeric sequence
+	for numEnd < len(filename) && filename[numEnd] >= '0' && filename[numEnd] <= '9' {
+		numEnd++
+	}
+
+	if numEnd == numStart {
+		return 1 // No number found, default to volume 1
+	}
+
+	// Parse the number
+	var volumeNum int
+	fmt.Sscanf(filename[numStart:numEnd], "%d", &volumeNum)
+
+	if volumeNum == 0 {
+		return 1 // Invalid number, default to volume 1
+	}
+
+	return volumeNum
+}

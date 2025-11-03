@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"simple-go/internal/domain/genre"
+	"simple-go/internal/domain/job"
 	"simple-go/internal/domain/media"
 	"simple-go/internal/domain/tag"
 	"simple-go/internal/domain/volume"
@@ -28,8 +29,9 @@ type Novel struct {
 	Translations []NovelTranslation `gorm:"foreignKey:NovelID;constraint:OnDelete:CASCADE;"`
 	Volumes      []volume.Volume    `gorm:"foreignKey:NovelID;constraint:OnDelete:CASCADE;"`
 
-	Tags   []tag.Tag     `gorm:"many2many:novel_tags;joinForeignKey:NovelID;joinReferences:TagID"`
-	Genres []genre.Genre `gorm:"many2many:novel_genres;joinForeignKey:NovelID;joinReferences:GenreID"`
+	Tags            []tag.Tag            `gorm:"many2many:novel_tags;joinForeignKey:NovelID;joinReferences:TagID"`
+	Genres          []genre.Genre        `gorm:"many2many:novel_genres;joinForeignKey:NovelID;joinReferences:GenreID"`
+	TranslationJobs []job.TranslationJob `gorm:"foreignKey:NovelID"`
 }
 
 func (n *Novel) BeforeCreate(tx *gorm.DB) error {

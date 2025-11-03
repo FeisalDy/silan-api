@@ -14,6 +14,7 @@ type Config struct {
 	JWT      JWTConfig
 	Casbin   CasbinConfig
 	Media    MediaConfig
+	Redis    RedisConfig
 }
 
 type ServerConfig struct {
@@ -43,6 +44,11 @@ type CasbinConfig struct {
 type MediaConfig struct {
 	ImgBBAPIKey string
 	ImgBBTTL    uint64
+}
+
+type RedisConfig struct {
+	URL       string
+	QueueName string
 }
 
 func Load() (*Config, error) {
@@ -85,6 +91,10 @@ func Load() (*Config, error) {
 		Media: MediaConfig{
 			ImgBBAPIKey: getEnv("IMGBB_API_KEY", ""),
 			ImgBBTTL:    imgbbTTL,
+		},
+		Redis: RedisConfig{
+			URL:       getEnv("REDIS_URL", "redis://localhost:6379/0"),
+			QueueName: getEnv("TRANSLATION_QUEUE", "translation_jobs"),
 		},
 	}, nil
 }

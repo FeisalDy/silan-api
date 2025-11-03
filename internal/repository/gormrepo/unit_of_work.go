@@ -57,3 +57,7 @@ func (rp *repoProvider) Tag() repository.TagRepository {
 func (rp *repoProvider) NovelTag() repository.NovelTagRepository {
 	return NewNovelTagRepository(rp.db)
 }
+
+func (rp *repoProvider) TranslationJob() repository.TranslationJobRepository {
+	return NewTranslationJobRepository(rp.db)
+}

@@ -1,6 +1,7 @@
 version: "3.9"
 
 services:
+  # --- PostgreSQL (temporary dev DB) ---
   postgres:
     image: postgres:16
     container_name: postgres-db
@@ -11,8 +12,24 @@ services:
       POSTGRES_DB: myappdb
     ports:
       - "5432:5432"
+    # No volume -> data is wiped every time container is removed
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user -d myappdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- Redis (temporary in-memory queue) ---
+  redis:
+    image: redis:7
+    container_name: redis-queue
+    restart: always
+    ports:
+      - "6379:6379"
+    # No volume -> Redis data resets every container restart
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5

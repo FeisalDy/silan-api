@@ -53,6 +53,12 @@ func SeedVolumes(db *gorm.DB) error {
 				translations := []volume.VolumeTranslation{
 					{
 						VolumeID:    v.ID,
+						Lang:        n.OriginalLanguage,
+						Title:       getVirtualVolumeTitle(n.OriginalLanguage),
+						Description: nil,
+					},
+					{
+						VolumeID:    v.ID,
 						Lang:        "en",
 						Title:       "Virtual Volume: Adventures Ahead",
 						Description: nil,
@@ -99,6 +105,12 @@ func SeedVolumes(db *gorm.DB) error {
 					translations := []volume.VolumeTranslation{
 						{
 							VolumeID:    v.ID,
+							Lang:        n.OriginalLanguage,
+							Title:       getVolumeTitle(n.OriginalLanguage, volumeNum),
+							Description: nil,
+						},
+						{
+							VolumeID:    v.ID,
 							Lang:        "en",
 							Title:       "Volume " + strconv.Itoa(int(volumeNum)) + ": Adventures Ahead",
 							Description: nil,
@@ -129,4 +141,37 @@ func SeedVolumes(db *gorm.DB) error {
 
 	log.Println("✅ Volumes seeding completed")
 	return nil
+}
+
+// Helper function to get volume title in different languages
+func getVolumeTitle(lang string, volumeNum int) string {
+	volumeNumStr := strconv.Itoa(volumeNum)
+	switch lang {
+	case "ko":
+		return "제 " + volumeNumStr + " 권: 앞으로의 모험"
+	case "ja":
+		return "第" + volumeNumStr + "巻: 冒険の始まり"
+	case "zh-CN":
+		return "第" + volumeNumStr + "卷: 即将到来的冒险"
+	case "id":
+		return "Volume " + volumeNumStr + ": Petualangan di Depan"
+	default: // en
+		return "Volume " + volumeNumStr + ": Adventures Ahead"
+	}
+}
+
+// Helper function to get virtual volume title in different languages
+func getVirtualVolumeTitle(lang string) string {
+	switch lang {
+	case "ko":
+		return "가상 권: 앞으로의 모험"
+	case "ja":
+		return "仮想巻: 冒険の始まり"
+	case "zh-CN":
+		return "虚拟卷: 即将到来的冒险"
+	case "id":
+		return "Volume Virtual: Petualangan di Depan"
+	default: // en
+		return "Virtual Volume: Adventures Ahead"
+	}
 }

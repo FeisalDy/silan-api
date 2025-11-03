@@ -19,4 +19,5 @@ type RepositoryProvider interface {
 	Volume() VolumeRepository
 	Tag() TagRepository
 	NovelTag() NovelTagRepository
+	TranslationJob() TranslationJobRepository
 }

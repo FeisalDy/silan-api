@@ -5,6 +5,7 @@ import (
 	"log"
 	"simple-go/internal/domain/chapter"
 	"simple-go/internal/domain/genre"
+	"simple-go/internal/domain/job"
 	"simple-go/internal/domain/novel"
 	novelgenre "simple-go/internal/domain/novel_genre"
 	noveltag "simple-go/internal/domain/novel_tag"
@@ -71,6 +72,8 @@ func migrateDatabase(db *gorm.DB) error {
 		&volume.VolumeTranslation{},
 		&chapter.Chapter{},
 		&chapter.ChapterTranslation{},
+		&job.TranslationJob{},
+		&job.TranslationSubtask{},
 	)
 
 	if err != nil {

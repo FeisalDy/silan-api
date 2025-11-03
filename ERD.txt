@@ -42,17 +42,20 @@ novel_translation [icon: globe, color: lightblue]{
 
 volume [icon:book, color:lightwhite]{
   id string pk
+  original_language string
   novel_id string fk
   cover_media_id string fk nullable
+  number int unique
+  is_virtual bool
   created_at timestamp
   updated_at timestamp
 }
 
 volume_translation [icon:globe, color:lightblue]{
   id string pk
+  lang string
   volume_id string fk
-  number int unique
-  name string
+  title string
   description string nullable
   created_at timestamp
   updated_at timestamp
@@ -79,6 +82,38 @@ chapter_translation [icon: globe, color: lightblue]{
   updated_at timestamp
 }
 
+// job translation
+translation_jobs [color: orange]{
+  id string pk
+  novel_id string fk
+  from_lang string
+  target_lang string
+  status string [pending, in_progress, completed, failed]
+  progres int
+  total_subtasks int
+  completed_subtasks int
+  stagis_prefix string
+  error_message string
+  created_by string fk
+  created_at timestamp
+  updated_at timestamp
+}
+
+translation_subtasks [color: orange]{
+  id string pk
+  job_id string fk
+  entity_type string
+  entity_id string
+  parent_volume_id string nullable
+  seq int
+  priority int
+  status string [pending, in_progress, completed, failed]
+  result_path string nullable
+  result_text string
+  started_at timestamp
+  finished_at timestamp
+}
+
 // Categorization
 genre [icon: tag, color: green]{
   id string pk
@@ -88,7 +123,6 @@ genre [icon: tag, color: green]{
 }
 
 novel_genre [icon: layers, color: green]{
-  id string pk
   novel_id string fk
   genre_id string fk
 }
@@ -101,7 +135,6 @@ tag [icon: hash, color: green]{
 }
 
 novel_tag [icon: layers, color: green]{
-  id string pk
   novel_id string fk
   tag_id string fk
 }
@@ -162,7 +195,6 @@ role [icon: shield, color: purple]{
 }
 
 user_role [icon: users, color: purple]{
-  id string pk
   user_id string fk
   role_id string fk
 }
@@ -333,6 +365,8 @@ chapter.volume_id > volume.id
 chapter_translation.chapter_id > chapter.id
 chapter_translation.translator_id > user.id
 
+// transaltion
+translation_subtasks.job_id > translation_jobs.id
 
 // Categorization
 novel_genre.novel_id > novel.id

@@ -31,7 +31,8 @@ func (r *novelRepository) GetByID(ctx context.Context, id string) (*novel.Novel,
 		Preload("Tags").
 		Preload("Translations").
 		Joins("JOIN novel_translations ON novel_translations.novel_id = novels.id").
-		First(&n, "id = ?", id).Error
+		Where("novels.id = ?", id).
+		First(&n).Error
 	if err != nil {
 		return nil, err
 	}

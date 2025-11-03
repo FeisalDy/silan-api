@@ -63,6 +63,12 @@ func InitializeDefaultPolicies(enforcer *casbin.Enforcer) error {
 		{"admin", "chapter_translation", "update"},
 		{"admin", "chapter_translation", "delete"},
 
+		{"admin", "translation_job", "create"},
+		{"admin", "translation_job", "read"},
+		{"admin", "translation_job", "list"},
+		{"admin", "translation_job", "update"},
+		{"admin", "translation_job", "delete"},
+
 		// ============ USER ROLE ============
 		// Basic user can read their own profile
 		{"user", "user", "read"},

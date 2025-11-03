@@ -102,5 +102,20 @@ func setupRoutes(router *gin.Engine, cfg *server.Config) {
 			chapters.POST("/translations", middleware.RequirePermission("chapter_translation", "create", cfg.Enforcer, roleGetter), cfg.ChapterHandler.CreateTranslation)
 			chapters.DELETE("/translations/:id", middleware.RequirePermission("chapter_translation", "delete", cfg.Enforcer, roleGetter), cfg.ChapterHandler.DeleteTranslation)
 		}
+
+		jobs := v1.Group("/translation-jobs")
+		jobs.Use(middleware.JWTAuth(cfg.JWTManager))
+		{
+			jobs.POST("", middleware.RequirePermission("translation_job", "create", cfg.Enforcer, roleGetter), cfg.TranslationJobHandler.CreateTranslationJob)
+			jobs.GET("", middleware.RequirePermission("translation_job", "list", cfg.Enforcer, roleGetter), cfg.TranslationJobHandler.GetAllJobs)
+			jobs.GET("/:id", middleware.RequirePermission("translation_job", "read", cfg.Enforcer, roleGetter), cfg.TranslationJobHandler.GetJobByID)
+			jobs.PUT("/:id/cancel", middleware.RequirePermission("translation_job", "update", cfg.Enforcer, roleGetter), cfg.TranslationJobHandler.CancelJob)
+		}
+
+		// Miscellaneous routes
+		misc := v1.Group("/miscellaneous")
+		{
+			misc.GET("/languages", cfg.MiscellaneousHandler.GetLanguages)
+		}
 	}
 }

@@ -45,6 +45,11 @@ func SeedNovels(db *gorm.DB) error {
 			},
 			Translations: []novel.NovelTranslation{
 				{
+					Lang:        "zh-CN",
+					Title:       "传奇修炼者",
+					Description: strPtr("一个年轻人踏上了成为领域中最强修炼者的旅程。面对无数的考验和强大的敌人，他必须掌握古老的技术并开辟自己的成仙之路。"),
+				},
+				{
 					Lang:        "en",
 					Title:       "The Legendary Cultivator",
 					Description: strPtr("A young man embarks on a journey to become the strongest cultivator in the realm. Facing countless trials and powerful enemies, he must master ancient techniques and forge his own path to immortality."),
@@ -69,6 +74,11 @@ func SeedNovels(db *gorm.DB) error {
 			},
 			Translations: []novel.NovelTranslation{
 				{
+					Lang:        "ja",
+					Title:       "異世界転生",
+					Description: strPtr("悲劇的な事故で死んだ後、サラリーマンはゲームのようなメカニクスを持つファンタジー世界に転生します。前世の知識を武器に、自由に生き、セカンドチャンスを楽しむことを決意します。"),
+				},
+				{
 					Lang:        "en",
 					Title:       "Reborn in Another World",
 					Description: strPtr("After dying in a tragic accident, a salary worker finds himself reborn in a fantasy world with game-like mechanics. Armed with knowledge from his previous life, he sets out to live freely and enjoy his second chance."),
@@ -92,6 +102,11 @@ func SeedNovels(db *gorm.DB) error {
 				CreatedBy:        author.ID,
 			},
 			Translations: []novel.NovelTranslation{
+				{
+					Lang:        "ko",
+					Title:       "그림자 군주",
+					Description: strPtr("던전과 몬스터가 현실이 된 세계에서, 가장 약한 헌터는 죽은 자를 되살리고 그림자 군대를 지휘할 수 있는 신비한 힘을 받습니다. 가장 약한 자에서 가장 강한 자로의 그의 여정이 시작됩니다."),
+				},
 				{
 					Lang:        "en",
 					Title:       "Shadow Monarch",

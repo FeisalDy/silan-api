@@ -8,22 +8,26 @@ import (
 	casbinpkg "simple-go/pkg/casbin"
 	"simple-go/pkg/config"
 	"simple-go/pkg/database"
+	"simple-go/pkg/logger"
+	"simple-go/pkg/queue"
 
 	"github.com/casbin/casbin/v2"
 	"gorm.io/gorm"
 )
 
 type App struct {
-	Config         *config.Config
-	DB             *gorm.DB
-	AuthHandler    *handler.AuthHandler
-	UserHandler    *handler.UserHandler
-	NovelHandler   *handler.NovelHandler
-	ChapterHandler *handler.ChapterHandler
-	UserService    *service.UserService
-	MediaService   *service.MediaService
-	JWTManager     *auth.JWTManager
-	Enforcer       *casbin.Enforcer
+	Config                *config.Config
+	DB                    *gorm.DB
+	AuthHandler           *handler.AuthHandler
+	UserHandler           *handler.UserHandler
+	NovelHandler          *handler.NovelHandler
+	TranslationJobHandler *handler.TranslationJobHandler
+	ChapterHandler        *handler.ChapterHandler
+	MiscellaneousHandler  *handler.MiscellaneousHandler
+	UserService           *service.UserService
+	MediaService          *service.MediaService
+	JWTManager            *auth.JWTManager
+	Enforcer              *casbin.Enforcer
 }
 
 func Initialize() (*App, error) {
@@ -43,6 +47,7 @@ func Initialize() (*App, error) {
 	volumeRepo := gormrepo.NewVolumeRepository(db)
 	chapterRepo := gormrepo.NewChapterRepository(db)
 	mediaRepo := gormrepo.NewMediaRepository(db)
+	jobRepo := gormrepo.NewTranslationJobRepository(db)
 	uow := gormrepo.NewUnitOfWork(db)
 
 	enforcer, err := casbinpkg.NewEnforcer(db, cfg.Casbin.ModelPath)
@@ -60,29 +65,42 @@ func Initialize() (*App, error) {
 	mediaService := service.NewMediaService(mediaRepo, uploadService)
 	epubService := service.NewEpubService()
 
+	// Initialize Redis queue (optional - gracefully handle failure)
+	var redisQueue *queue.RedisQueue
+	redisQueue, err = queue.NewRedisQueue(cfg.Redis.URL, cfg.Redis.QueueName)
+	if err != nil {
+		logger.Warn("Failed to connect to Redis, translation jobs will not be queued: " + err.Error())
+		redisQueue = nil // Service will work without queue
+	}
+
 	// Initialize services
 	authService := service.NewAuthService(uow, userRepo, roleRepo, jwtManager)
 	userService := service.NewUserService(userRepo, roleRepo)
 	volumeService := service.NewVolumeService(uow, volumeRepo, mediaService)
 	novelService := service.NewNovelService(uow, novelRepo, mediaService, volumeService, epubService)
 	chapterService := service.NewChapterService(uow, chapterRepo, novelRepo)
+	jobService := service.NewTranslationJobService(uow, jobRepo, novelRepo, volumeRepo, chapterRepo, redisQueue)
 
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(authService)
 	userHandler := handler.NewUserHandler(userService)
 	novelHandler := handler.NewNovelHandler(novelService)
 	chapterHandler := handler.NewChapterHandler(chapterService)
+	translationJobHandler := handler.NewTranslationJobHandler(jobService)
+	miscellaneousHandler := handler.NewMiscellaneousHandler()
 
 	return &App{
-		Config:         cfg,
-		DB:             db,
-		AuthHandler:    authHandler,
-		UserHandler:    userHandler,
-		NovelHandler:   novelHandler,
-		ChapterHandler: chapterHandler,
-		UserService:    userService,
-		MediaService:   mediaService,
-		JWTManager:     jwtManager,
-		Enforcer:       enforcer,
+		Config:                cfg,
+		DB:                    db,
+		AuthHandler:           authHandler,
+		UserHandler:           userHandler,
+		NovelHandler:          novelHandler,
+		ChapterHandler:        chapterHandler,
+		UserService:           userService,
+		MediaService:          mediaService,
+		TranslationJobHandler: translationJobHandler,
+		MiscellaneousHandler:  miscellaneousHandler,
+		JWTManager:            jwtManager,
+		Enforcer:              enforcer,
 	}, nil
 }

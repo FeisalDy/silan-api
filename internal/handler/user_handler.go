@@ -62,7 +62,7 @@ func (h *UserHandler) GetAll(c *gin.Context) {
 
 	pagination := response.Pagination{
 		CurrentPage: page,
-		PerPage:     limit,
+		Limit:       limit,
 		Total:       total,
 		TotalPages:  totalPages,
 	}

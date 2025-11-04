@@ -42,13 +42,22 @@ func (r *novelRepository) GetByID(ctx context.Context, id string) (*novel.Novel,
 func (r *novelRepository) GetAll(ctx context.Context, limit, offset int, title, lang string) ([]novel.Novel, error) {
 	var novels []novel.Novel
 
+	// Base query: load novels and associations without joining to translations to avoid row multiplication
 	query := r.db.WithContext(ctx).
+		Model(&novel.Novel{}).
 		Preload("Media").
 		Preload("Translations").
 		Preload("Genres").
 		Preload("Tags").
-		Joins("JOIN novel_translations ON novel_translations.novel_id = novels.id").
 		Order("novels.updated_at DESC")
+
+	// Optional title filter: when provided, filter through translations' title
+	if title != "" {
+		// Join only when filtering by title and ensure distinct novels
+		query = query.Joins("JOIN novel_translations ON novel_translations.novel_id = novels.id").
+			Where("novel_translations.title ILIKE ?", "%"+title+"%").
+			Distinct("novels.id")
+	}
 
 	if limit > 0 {
 		query = query.Limit(limit)
@@ -67,12 +76,14 @@ func (r *novelRepository) GetAll(ctx context.Context, limit, offset int, title, 
 func (r *novelRepository) GetAllByLang(ctx context.Context, lang string, limit, offset int) ([]novel.Novel, error) {
 	var novels []novel.Novel
 
+	// Filter novels that have a translation for the specified lang without duplicating rows
 	query := r.db.WithContext(ctx).
+		Model(&novel.Novel{}).
 		Preload("Translations", "lang = ?", lang).
 		Preload("Media").
 		Preload("Genres").
 		Preload("Tags").
-		Joins("JOIN novel_translations ON novel_translations.novel_id = novels.id AND novel_translations.lang = ?", lang).
+		Where("EXISTS (SELECT 1 FROM novel_translations nt WHERE nt.novel_id = novels.id AND nt.lang = ?)", lang).
 		Order("novels.updated_at DESC")
 
 	if limit > 0 {

@@ -87,7 +87,7 @@ func (h *TranslationJobHandler) GetAllJobs(c *gin.Context) {
 
 	pagination := response.Pagination{
 		CurrentPage: page,
-		PerPage:     limit,
+		Limit:       limit,
 		Total:       total,
 		TotalPages:  totalPages,
 	}

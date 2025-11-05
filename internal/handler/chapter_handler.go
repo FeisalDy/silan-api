@@ -13,11 +13,13 @@ import (
 
 type ChapterHandler struct {
 	chapterService *service.ChapterService
+	volumeService  *service.VolumeService
 }
 
-func NewChapterHandler(chapterService *service.ChapterService) *ChapterHandler {
+func NewChapterHandler(chapterService *service.ChapterService, volumeService *service.VolumeService) *ChapterHandler {
 	return &ChapterHandler{
 		chapterService: chapterService,
+		volumeService:  volumeService,
 	}
 }
 
@@ -50,7 +52,9 @@ func (h *ChapterHandler) Create(c *gin.Context) {
 func (h *ChapterHandler) GetByID(c *gin.Context) {
 	id := c.Param("id")
 	lang := c.DefaultQuery("lang", "")
-	result, err := h.chapterService.GetByID(c.Request.Context(), id, lang)
+
+	// Use VolumeService to get chapter with cross-volume navigation
+	result, err := h.volumeService.GetChapterWithCrossVolumeNavigation(c.Request.Context(), id, lang)
 	if err != nil {
 		response.Error(c, http.StatusNotFound, "Failed to retrieve chapter", err)
 		return

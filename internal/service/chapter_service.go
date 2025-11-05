@@ -14,18 +14,15 @@ import (
 type ChapterService struct {
 	uow         repository.UnitOfWork
 	chapterRepo repository.ChapterRepository
-	novelRepo   repository.NovelRepository
 }
 
 func NewChapterService(
 	uow repository.UnitOfWork,
 	chapterRepo repository.ChapterRepository,
-	novelRepo repository.NovelRepository,
 ) *ChapterService {
 	return &ChapterService{
 		uow:         uow,
 		chapterRepo: chapterRepo,
-		novelRepo:   novelRepo,
 	}
 }
 
@@ -92,7 +89,37 @@ func (s *ChapterService) GetByID(ctx context.Context, id, lang string) (*chapter
 		logger.Error(err, "failed to get chapter by ID")
 		return nil, errors.New("unable to retrieve chapter")
 	}
-	res := chapter.MapChapterToDTO(*c, lang)
+
+	// Get next and previous chapter IDs within the same volume only
+	nextID, err := s.chapterRepo.GetNextChapterID(ctx, c.VolumeID, c.Number)
+	if err != nil {
+		logger.Error(err, "failed to get next chapter ID")
+		nextID = nil
+	}
+
+	prevID, err := s.chapterRepo.GetPreviousChapterID(ctx, c.VolumeID, c.Number)
+	if err != nil {
+		logger.Error(err, "failed to get previous chapter ID")
+		prevID = nil
+	}
+
+	res := chapter.MapChapterToDTO(*c, lang, nextID, prevID)
+	return &res, nil
+}
+
+// GetByIDWithNavigation returns a chapter with cross-volume navigation
+// This is called by VolumeService to provide full navigation
+func (s *ChapterService) GetByIDWithNavigation(ctx context.Context, id, lang string, nextID, prevID *string) (*chapter.ChapterResponseDTO, error) {
+	c, err := s.chapterRepo.GetByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New("chapter not found")
+		}
+		logger.Error(err, "failed to get chapter by ID")
+		return nil, errors.New("unable to retrieve chapter")
+	}
+
+	res := chapter.MapChapterToDTO(*c, lang, nextID, prevID)
 	return &res, nil
 }
 

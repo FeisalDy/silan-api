@@ -13,6 +13,8 @@ type VolumeRepository interface {
 	GetByID(ctx context.Context, id string) (*volume.Volume, error)
 	GetAllWithChaptersByNovelID(ctx context.Context, novelID string) ([]volume.Volume, error)
 	GetAllWithChaptersByNovelIDAndLang(ctx context.Context, novelID, lang string) ([]volume.Volume, error)
+	GetNextVolumeID(ctx context.Context, novelID string, currentNumber int) (*string, error)
+	GetPreviousVolumeID(ctx context.Context, novelID string, currentNumber int) (*string, error)
 
 	Delete(ctx context.Context, id string) (int64, error)
 }

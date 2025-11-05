@@ -84,6 +84,42 @@ func (r *volumeRepository) GetAllWithChaptersByNovelIDAndLang(ctx context.Contex
 	return volumes, nil
 }
 
+func (r *volumeRepository) GetNextVolumeID(ctx context.Context, novelID string, currentNumber int) (*string, error) {
+	var nextVolume volume.Volume
+	err := r.db.WithContext(ctx).
+		Select("id").
+		Where("novel_id = ? AND number > ?", novelID, currentNumber).
+		Order("number ASC").
+		Limit(1).
+		First(&nextVolume).Error
+
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &nextVolume.ID, nil
+}
+
+func (r *volumeRepository) GetPreviousVolumeID(ctx context.Context, novelID string, currentNumber int) (*string, error) {
+	var prevVolume volume.Volume
+	err := r.db.WithContext(ctx).
+		Select("id").
+		Where("novel_id = ? AND number < ?", novelID, currentNumber).
+		Order("number DESC").
+		Limit(1).
+		First(&prevVolume).Error
+
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &prevVolume.ID, nil
+}
+
 func (r *volumeRepository) Delete(ctx context.Context, id string) (int64, error) {
 	result := r.db.WithContext(ctx).Delete(&volume.Volume{}, "id = ?", id)
 	return result.RowsAffected, result.Error

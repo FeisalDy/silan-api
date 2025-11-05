@@ -19,12 +19,14 @@ type CreateChapterTranslationDTO struct {
 }
 
 type ChapterResponseDTO struct {
-	ID        string    `json:"id"`
-	VolumeID  string    `json:"volume_id,omitempty"`
-	Number    int       `json:"number"`
-	WordCount *int      `json:"word_count"`
-	Title     string    `json:"title"`
-	Content   string    `json:"content"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID                string    `json:"id"`
+	VolumeID          string    `json:"volume_id,omitempty"`
+	Number            int       `json:"number"`
+	WordCount         *int      `json:"word_count"`
+	Title             string    `json:"title"`
+	Content           string    `json:"content"`
+	NextChapterID     *string   `json:"next_chapter_id"`
+	PreviousChapterID *string   `json:"previous_chapter_id"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }

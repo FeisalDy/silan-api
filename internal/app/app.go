@@ -76,16 +76,16 @@ func Initialize() (*App, error) {
 	// Initialize services
 	authService := service.NewAuthService(uow, userRepo, roleRepo, jwtManager)
 	userService := service.NewUserService(userRepo, roleRepo)
-	volumeService := service.NewVolumeService(uow, volumeRepo, mediaService)
+	volumeService := service.NewVolumeService(uow, volumeRepo, chapterRepo, mediaService)
 	novelService := service.NewNovelService(uow, novelRepo, mediaService, volumeService, epubService)
-	chapterService := service.NewChapterService(uow, chapterRepo, novelRepo)
+	chapterService := service.NewChapterService(uow, chapterRepo)
 	jobService := service.NewTranslationJobService(uow, jobRepo, novelRepo, volumeRepo, chapterRepo, redisQueue)
 
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(authService)
 	userHandler := handler.NewUserHandler(userService)
 	novelHandler := handler.NewNovelHandler(novelService)
-	chapterHandler := handler.NewChapterHandler(chapterService)
+	chapterHandler := handler.NewChapterHandler(chapterService, volumeService)
 	translationJobHandler := handler.NewTranslationJobHandler(jobService)
 	miscellaneousHandler := handler.NewMiscellaneousHandler()
 

@@ -3,6 +3,7 @@ package seeds
 import (
 	"log"
 	"simple-go/internal/domain/genre"
+	"simple-go/internal/domain/media"
 	"simple-go/internal/domain/novel"
 	"simple-go/internal/domain/tag"
 	"simple-go/internal/domain/user"
@@ -131,6 +132,14 @@ func SeedNovels(db *gorm.DB) error {
 			*novelData.Novel.OriginalAuthor).First(&existingNovel)
 
 		if result.Error == gorm.ErrRecordNotFound {
+			// Attempt to set a default cover media if one exists
+			var defaultMediaID string
+			// Look for previously seeded default media by URL
+			var coverMedia media.Media
+			if err := db.Where("url = ?", "https://picsum.photos/200/300").First(&coverMedia).Error; err == nil {
+				defaultMediaID = coverMedia.ID
+				novelData.Novel.CoverMediaID = &defaultMediaID
+			}
 			// Create novel
 			if err := db.Create(&novelData.Novel).Error; err != nil {
 				log.Printf("⚠️  Failed to seed novel %d: %v", i+1, err)

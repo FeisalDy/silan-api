@@ -13,10 +13,11 @@ import (
 )
 
 type AuthService struct {
-	uow        repository.UnitOfWork
-	userRepo   repository.UserRepository
-	roleRepo   repository.RoleRepository
-	jwtManager *auth.JWTManager
+	uow               repository.UnitOfWork
+	userRepo          repository.UserRepository
+	roleRepo          repository.RoleRepository
+	jwtManager        *auth.JWTManager
+	permissionService *PermissionService
 }
 
 func NewAuthService(
@@ -24,12 +25,14 @@ func NewAuthService(
 	userRepo repository.UserRepository,
 	roleRepo repository.RoleRepository,
 	jwtManager *auth.JWTManager,
+	permissionService *PermissionService,
 ) *AuthService {
 	return &AuthService{
-		uow:        uow,
-		userRepo:   userRepo,
-		roleRepo:   roleRepo,
-		jwtManager: jwtManager,
+		uow:               uow,
+		userRepo:          userRepo,
+		roleRepo:          roleRepo,
+		jwtManager:        jwtManager,
+		permissionService: permissionService,
 	}
 }
 
@@ -45,8 +48,8 @@ type LoginRequest struct {
 }
 
 type AuthResponse struct {
-	Token string             `json:"token"`
-	User  *user.UserResponse `json:"user"`
+	Token string                    `json:"token"`
+	User  *user.UserProfileResponse `json:"user"`
 }
 
 func (s *AuthService) Register(ctx context.Context, req RegisterRequest) (*AuthResponse, error) {
@@ -119,9 +122,16 @@ func (s *AuthService) Register(ctx context.Context, req RegisterRequest) (*AuthR
 		return nil, err
 	}
 
+	// Get user permissions
+	permissions, err := s.permissionService.GetUserPermissions(ctx, newUser.ID)
+	if err != nil {
+		logger.Error(err, "failed to get user permissions")
+		return nil, errors.New("unable to retrieve user permissions")
+	}
+
 	return &AuthResponse{
 		Token: token,
-		User:  newUser.ToResponse(),
+		User:  newUser.ToProfileResponse(permissions),
 	}, nil
 }
 
@@ -161,8 +171,37 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*AuthRespons
 		return nil, errors.New("unable to complete login")
 	}
 
+	// Get user permissions
+	permissions, err := s.permissionService.GetUserPermissions(ctx, u.ID)
+	if err != nil {
+		logger.Error(err, "failed to get user permissions")
+		return nil, errors.New("unable to retrieve user permissions")
+	}
+
 	return &AuthResponse{
 		Token: token,
-		User:  u.ToResponse(),
+		User:  u.ToProfileResponse(permissions),
 	}, nil
+}
+
+func (s *AuthService) GetProfile(ctx context.Context, userID string) (*user.UserProfileResponse, error) {
+	// Get user by ID
+	u, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			logger.Warn("profile request for non-existent user")
+			return nil, errors.New("user not found")
+		}
+		logger.Error(err, "failed to get user by ID")
+		return nil, errors.New("unable to retrieve user profile")
+	}
+
+	// Get user permissions
+	permissions, err := s.permissionService.GetUserPermissions(ctx, u.ID)
+	if err != nil {
+		logger.Error(err, "failed to get user permissions")
+		return nil, errors.New("unable to retrieve user permissions")
+	}
+
+	return u.ToProfileResponse(permissions), nil
 }

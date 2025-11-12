@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"simple-go/internal/middleware"
 	"simple-go/internal/service"
 	"simple-go/pkg/response"
 
@@ -51,4 +52,20 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusOK, "Login successful", result)
+}
+
+func (h *AuthHandler) GetProfile(c *gin.Context) {
+	userID, ok := middleware.GetUserID(c)
+	if !ok {
+		response.Error(c, http.StatusUnauthorized, "User not authenticated")
+		return
+	}
+
+	result, err := h.authService.GetProfile(c.Request.Context(), userID)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, fmt.Sprintf("Failed to get profile: %v", err))
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Profile retrieved successfully", result)
 }

@@ -59,6 +59,18 @@ type UserResponse struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type UserProfileResponse struct {
+	ID          string              `json:"id"`
+	Username    *string             `json:"username"`
+	Email       string              `json:"email"`
+	AvatarURL   *string             `json:"avatar_url"`
+	Bio         *string             `json:"bio"`
+	Status      string              `json:"status"`
+	Permissions map[string][]string `json:"permissions"`
+	CreatedAt   time.Time           `json:"created_at"`
+	UpdatedAt   time.Time           `json:"updated_at"`
+}
+
 func (u *User) ToResponse() *UserResponse {
 	return &UserResponse{
 		ID:        u.ID,
@@ -69,5 +81,19 @@ func (u *User) ToResponse() *UserResponse {
 		Status:    u.Status,
 		CreatedAt: u.CreatedAt,
 		UpdatedAt: u.UpdatedAt,
+	}
+}
+
+func (u *User) ToProfileResponse(permissions map[string][]string) *UserProfileResponse {
+	return &UserProfileResponse{
+		ID:          u.ID,
+		Username:    u.Username,
+		Email:       u.Email,
+		AvatarURL:   u.AvatarURL,
+		Bio:         u.Bio,
+		Status:      u.Status,
+		Permissions: permissions,
+		CreatedAt:   u.CreatedAt,
+		UpdatedAt:   u.UpdatedAt,
 	}
 }

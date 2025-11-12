@@ -55,6 +55,7 @@ func setupRoutes(router *gin.Engine, cfg *server.Config) {
 		{
 			auth.POST("/register", cfg.AuthHandler.Register)
 			auth.POST("/login", cfg.AuthHandler.Login)
+			auth.GET("/profile", middleware.JWTAuth(cfg.JWTManager), cfg.AuthHandler.GetProfile)
 		}
 
 		// Role getter function for Casbin (shared by all protected routes)

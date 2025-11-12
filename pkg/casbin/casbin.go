@@ -74,8 +74,10 @@ func InitializeDefaultPolicies(enforcer *casbin.Enforcer) error {
 		{"user", "user", "read"},
 
 		// Basic user can create novels and chapters
-		{"user", "novel", "create"},
-		{"user", "chapter", "create"},
+		{"user", "novel", "read"},
+		{"user", "chapter", "read"},
+		{"user", "novel", "list"},
+		{"user", "chapter", "list"},
 
 		// ============ AUTHOR ROLE ============
 		// Author can manage novels and chapters

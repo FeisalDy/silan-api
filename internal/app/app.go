@@ -61,6 +61,9 @@ func Initialize() (*App, error) {
 
 	jwtManager := auth.NewJWTManager(cfg.JWT.Secret, cfg.JWT.ExpirationHours)
 
+	// Initialize permission service
+	permissionService := service.NewPermissionService(userRepo, enforcer)
+
 	uploadService := service.NewUploadService(nil, cfg.Media.ImgBBAPIKey, cfg.Media.ImgBBTTL)
 	mediaService := service.NewMediaService(mediaRepo, uploadService)
 	epubService := service.NewEpubService()
@@ -74,7 +77,7 @@ func Initialize() (*App, error) {
 	}
 
 	// Initialize services
-	authService := service.NewAuthService(uow, userRepo, roleRepo, jwtManager)
+	authService := service.NewAuthService(uow, userRepo, roleRepo, jwtManager, permissionService)
 	userService := service.NewUserService(userRepo, roleRepo)
 	volumeService := service.NewVolumeService(uow, volumeRepo, chapterRepo, mediaService)
 	novelService := service.NewNovelService(uow, novelRepo, mediaService, volumeService, epubService)

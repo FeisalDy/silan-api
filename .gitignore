@@ -20,7 +20,11 @@ vendor/
 go.work
 
 # Environment variables
-.env
+.env*
+
+# But keep env.example
+!.env.example
+
 
 # IDE
 .vscode/

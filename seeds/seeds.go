@@ -30,6 +30,7 @@ func RunAllSeeds(db *gorm.DB) error {
 		{"Users", SeedUsers},
 		{"Genres", SeedGenres},
 		{"Tags", SeedTags},
+		{"Media", SeedMedia},
 		{"Novels", SeedNovels},
 		{"Volumes", SeedVolumes},
 		{"Chapters", SeedChapters},

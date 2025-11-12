@@ -11,10 +11,11 @@ import (
 
 // Response is the standard API response structure
 type Response struct {
-	Success bool   `json:"success"`
-	Message string `json:"message,omitempty"`
-	Data    any    `json:"data,omitempty"`
-	Error   any    `json:"error,omitempty"`
+	Success   bool   `json:"success"`
+	Message   string `json:"message,omitempty"`
+	Data      any    `json:"data,omitempty"`
+	ErrorCode string `json:"error_code,omitempty"`
+	Error     any    `json:"error,omitempty"`
 }
 
 // PaginatedResponse is for paginated list responses
@@ -33,6 +34,15 @@ type Pagination struct {
 	TotalPages  int   `json:"total_pages"`
 }
 
+const (
+	ErrCodeUserAlreadyExists      = "USER002"
+	ErrCodeUserCreationFailed     = "USER003"
+	ErrCodeUserUpdateFailed       = "USER004"
+	ErrCodeUserDeletionFailed     = "USER005"
+	ErrCodeUserInvalidCredentials = "USER006"
+	ErrCodeUserValidation         = "USER007"
+)
+
 // Success sends a successful response
 func Success(c *gin.Context, statusCode int, message string, data interface{}) {
 	c.JSON(statusCode, Response{
@@ -42,6 +52,8 @@ func Success(c *gin.Context, statusCode int, message string, data interface{}) {
 	})
 }
 
+// Error is DEPRECATED and will be removed in a future release.
+// Use ErrorWithCode or a custom response function instead.
 func Error(c *gin.Context, statusCode int, messageOrErr any, errorDetails ...any) {
 	var (
 		message   string
@@ -70,6 +82,38 @@ func Error(c *gin.Context, statusCode int, messageOrErr any, errorDetails ...any
 		Success: false,
 		Message: message,
 		Error:   errDetail,
+	})
+}
+
+func ErrorWithCode(c *gin.Context, statusCode int, errorCode string, messageOrErr any, errorDetails ...any) {
+	var (
+		message   string
+		errDetail any
+	)
+
+	if err, ok := messageOrErr.(error); ok {
+		message = err.Error()
+		errDetail = nil
+	} else if msg, ok := messageOrErr.(string); ok {
+		message = msg
+	} else {
+		message = "Unknown error"
+	}
+
+	if len(errorDetails) > 0 {
+		detail := errorDetails[0]
+		if e, ok := detail.(error); ok {
+			errDetail = e.Error()
+		} else {
+			errDetail = detail
+		}
+	}
+
+	c.JSON(statusCode, Response{
+		Success:   false,
+		Message:   message,
+		ErrorCode: errorCode,
+		Error:     errDetail,
 	})
 }
 

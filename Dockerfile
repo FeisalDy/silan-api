@@ -1,17 +1,23 @@
-# Dockerfile
-FROM golang:1.25-alpine AS builder
-RUN apk add --no-cache git
+# Use Go base image
+FROM golang:1.25-alpine
+
+# Install required packages
+RUN apk add --no-cache git bash
+
+# Install Air (hot reload tool)
+RUN go install github.com/air-verse/air@latest
+
 WORKDIR /app
 
+# Copy Go module files first (for caching)
 COPY go.mod go.sum ./
 RUN go mod download
 
+# Copy the source code
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o simple-go ./cmd/main.go
 
-FROM alpine:3.20
-RUN apk add --no-cache ca-certificates
-WORKDIR /app
-COPY --from=builder /app/simple-go .
+# Expose port
 EXPOSE 8080
-ENTRYPOINT ["./simple-go"]
+
+# Seed and run app with Air
+CMD /bin/bash -c "go run ./cmd/seed/main.go && air"

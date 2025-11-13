@@ -97,15 +97,7 @@ func (s *NovelService) GetByID(ctx context.Context, id, lang string) (*novel.Nov
 }
 
 func (s *NovelService) GetAll(ctx context.Context, limit, offset int, title, lang string) ([]novel.NovelResponseDTO, int64, error) {
-	var novels []novel.Novel
-	var err error
-
-	if lang != "" {
-		novels, err = s.novelRepo.GetAllByLang(ctx, lang, limit, offset)
-	} else {
-		novels, err = s.novelRepo.GetAll(ctx, limit, offset, title, lang)
-	}
-
+	novels, err := s.novelRepo.GetAll(ctx, limit, offset, title, lang)
 	if err != nil {
 		logger.Error(err, "failed to get all novels")
 		return nil, 0, errors.New("unable to retrieve novels")

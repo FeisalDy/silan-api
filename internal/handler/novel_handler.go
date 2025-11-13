@@ -60,13 +60,27 @@ func (h *NovelHandler) GetByID(c *gin.Context) {
 	id := c.Param("id")
 	lang := c.DefaultQuery("lang", "")
 
-	result, err := h.novelService.GetByID(c.Request.Context(), id, lang)
+	ctx := c.Request.Context()
+	result, err := h.novelService.GetByID(ctx, id, lang)
 	if err != nil {
 		response.Error(c, http.StatusNotFound, fmt.Sprintf("Novel not found: %v", err))
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Novel retrieved successfully", result)
+	servedLang := result.Lang
+	if servedLang == "" && lang != "" {
+		if fallback, fallbackErr := h.novelService.GetByID(ctx, id, ""); fallbackErr == nil {
+			result = fallback
+			servedLang = result.Lang
+		}
+	}
+
+	message := "Novel retrieved successfully"
+	if lang != "" && servedLang != "" && servedLang != lang {
+		message = fmt.Sprintf("Novel translation for '%s' not found; returned '%s' instead", lang, servedLang)
+	}
+
+	response.Success(c, http.StatusOK, message, result)
 }
 
 func (h *NovelHandler) GetAll(c *gin.Context) {
@@ -84,10 +98,25 @@ func (h *NovelHandler) GetAll(c *gin.Context) {
 
 	offset := (page - 1) * limit
 
-	novels, total, err := h.novelService.GetAll(c.Request.Context(), limit, offset, title, lang)
+	ctx := c.Request.Context()
+	novels, total, err := h.novelService.GetAll(ctx, limit, offset, title, lang)
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, fmt.Sprintf("Failed to retrieve novels: %v", err))
 		return
+	}
+
+	fallbackCount := 0
+	if lang != "" {
+		for i := range novels {
+			if novels[i].Lang == "" {
+				if fallback, fallbackErr := h.novelService.GetByID(ctx, novels[i].ID, ""); fallbackErr == nil {
+					novels[i] = *fallback
+				}
+			}
+			if novels[i].Lang != lang {
+				fallbackCount++
+			}
+		}
 	}
 
 	totalPages := int(total) / limit
@@ -102,7 +131,16 @@ func (h *NovelHandler) GetAll(c *gin.Context) {
 		TotalPages:  totalPages,
 	}
 
-	response.PaginatedSuccess(c, http.StatusOK, "Novels retrieved successfully", novels, pagination)
+	message := "Novels retrieved successfully"
+	if lang != "" && fallbackCount > 0 {
+		if fallbackCount == len(novels) {
+			message = fmt.Sprintf("No '%s' translations found; returned original language data", lang)
+		} else {
+			message = fmt.Sprintf("Some novels missing '%s' translations; returned original language data where needed", lang)
+		}
+	}
+
+	response.PaginatedSuccess(c, http.StatusOK, message, novels, pagination)
 }
 
 func (h *NovelHandler) Delete(c *gin.Context) {
